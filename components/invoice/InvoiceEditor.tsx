@@ -10,6 +10,8 @@ import EditorToolbar from "./EditorToolbar";
 import ChatPanel from "./ChatPanel";
 import InvoiceCanvas from "./InvoiceCanvas";
 import dynamic from "next/dynamic";
+import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
+import { Bot, Settings } from "lucide-react";
 
 const SettingsPanel = dynamic(() => import("./SettingsPanel"), { ssr: false });
 
@@ -31,7 +33,7 @@ export default function InvoiceEditor() {
   const [isEditMode, setIsEditMode] = useState(true);
   const [scale, setScale] = useState(0.85);
   const [isAutoFit, setIsAutoFit] = useState(true);
-  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"settings" | "ai">("settings");
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -63,7 +65,7 @@ export default function InvoiceEditor() {
     const ro = new ResizeObserver(fit);
     if (containerRef.current) ro.observe(containerRef.current);
     return () => ro.disconnect();
-  }, [aiPanelOpen, isEditMode, isAutoFit]);
+  }, [activeTab, isEditMode, isAutoFit]);
 
   // Keyboard shortcuts for zooming
   useEffect(() => {
@@ -217,32 +219,48 @@ export default function InvoiceEditor() {
       <EditorToolbar
         isEditMode={isEditMode}
         onToggleEditMode={() => setIsEditMode((v) => !v)}
-        aiPanelOpen={aiPanelOpen}
-        onToggleAI={() => setAiPanelOpen((v) => !v)}
         scale={scale}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomFit={handleZoomFit}
         onDownloadPDF={handleDownloadPDF}
         isExporting={isExporting}
+        onReset={handleReset}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Settings Panel */}
-        <SettingsPanel
-          invoice={invoice}
-          onChange={updateInvoice}
-          onReset={handleReset}
-        />
+        {/* Sidebar Tabs Area */}
+        <div className="flex flex-col h-full w-1/3 min-w-[360px] max-w-[480px] border-r border-border bg-sidebar shrink-0 shadow-sm z-10 transition-all">
+          <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as "settings" | "ai")} className="flex flex-col h-full data-[orientation=horizontal]:flex-col">
+            <div className="px-3 pt-3 pb-2 border-b border-border bg-background/50 backdrop-blur-sm shrink-0">
+              <TabsList className="w-full grid grid-cols-2 bg-muted/50 p-1 rounded-lg">
+                <TabsTab value="settings" className="font-semibold text-xs h-8">
+                  <Settings className="w-3.5 h-3.5 mr-1" />
+                  Settings
+                </TabsTab>
+                <TabsTab value="ai" className="font-semibold text-xs h-8">
+                  <Bot className="w-3.5 h-3.5 mr-1" />
+                  AI Assistant
+                </TabsTab>
+              </TabsList>
+            </div>
 
-        {/* AI Chat Panel */}
-        {aiPanelOpen && (
-          <ChatPanel
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            isGenerating={isGenerating}
-          />
-        )}
+            <TabsPanel value="settings" className="flex-1 overflow-hidden">
+              <SettingsPanel
+                invoice={invoice}
+                onChange={updateInvoice}
+              />
+            </TabsPanel>
+
+            <TabsPanel value="ai" className="flex-1 overflow-hidden">
+              <ChatPanel
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                isGenerating={isGenerating}
+              />
+            </TabsPanel>
+          </Tabs>
+        </div>
 
         {/* ── Canvas Area ── */}
         <div
@@ -268,7 +286,7 @@ export default function InvoiceEditor() {
               width: 816,
               // The parent container handles the layout. 
               // We need to ensure the container knows the scaled height to avoid extra scroll space.
-              height: 1056, 
+              height: 1056,
               display: "flex",
               flexDirection: "column",
               marginBottom: -1056 * (1 - scale), // Pull up the next element (scrollbar space)

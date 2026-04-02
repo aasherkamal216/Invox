@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface EditableFieldProps {
   value: string;
@@ -70,10 +71,27 @@ export default function EditableField({
       );
     }
 
+    if (type === "date") {
+      return (
+        <DatePicker
+          date={value}
+          onChange={(val) => {
+            onChange(val);
+            setEditing(false);
+          }}
+          onOpenChange={(open) => {
+            if (!open) setEditing(false);
+          }}
+          defaultOpen={true}
+          className={cn("h-7 px-1 min-w-[120px]", className)}
+        />
+      );
+    }
+
     return (
       <input
         ref={inputRef as React.RefObject<HTMLInputElement>}
-        type={type === "number" ? "number" : type === "date" ? "date" : "text"}
+        type={type === "number" ? "number" : "text"}
         {...sharedProps}
       />
     );

@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Sora:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&family=Figtree:wght@400;500;700&family=Urbanist:wght@400;500;700&family=Lexend:wght@400;500;700&family=Public+Sans:wght@400;500;700&family=Bitter:ital,wght@0,400;0,700;1,400&display=swap");
+@import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -170,9 +170,9 @@ html {
   top: 0;
   left: 0;
   right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border-radius: 9999px 9999px 50% 50%;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 100%);
+  border-radius: inherit;
   pointer-events: none;
 }
 
@@ -199,11 +199,9 @@ html {
     0 0 0 1px rgba(255, 255, 255, 0.15) inset,
     0 2px 4px rgba(244, 63, 94, 0.2),
     0 8px 32px rgba(244, 63, 94, 0.35);
-  transform: translateY(-1px);
 }
 
 .btn-glass:active {
-  transform: translateY(0);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 1px 2px rgba(244, 63, 94, 0.15);
 }
 
@@ -221,12 +219,12 @@ html {
   letter-spacing: 0.01em;
   cursor: pointer;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1.5px solid rgba(15, 15, 15, 0.12);
-  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.15) 100%);
   color: var(--foreground);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5) inset, 0 1px 3px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6) inset, 0 4px 24px -2px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
@@ -236,21 +234,20 @@ html {
   top: 0;
   left: 0;
   right: 0;
-  height: 50%;
+  bottom: 0;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%);
-  border-radius: 9999px 9999px 50% 50%;
+  border-radius: inherit;
   pointer-events: none;
 }
 
 .btn-glass-outline:hover {
-  border-color: rgba(15, 15, 15, 0.2);
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6) inset, 0 2px 8px rgba(0, 0, 0, 0.06);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.25) 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8) inset, 0 8px 32px -4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-glass-outline:active {
-  transform: translateY(0);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) inset, 0 2px 8px -2px rgba(0, 0, 0, 0.05);
 }
 
 /* ─── Feature Pill ─── */

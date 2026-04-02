@@ -3,9 +3,11 @@
 import { useEffect, useRef } from "react";
 import { ArrowRight02Icon, PlayIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/landing/LandingButton";
+import { useRouter } from "next/navigation";
 
 export default function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -64,6 +66,7 @@ export default function HeroSection() {
               className="min-w-[190px]"
               icon={ArrowRight02Icon}
               iconPosition="right"
+              onClick={() => router.push("/editor")}
             >
               Start Creating
             </Button>

@@ -1,0 +1,273 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
+import type { InvoiceData, ChatMessage } from "@/lib/types";
+import { SAMPLE_INVOICE } from "@/lib/invoice-defaults";
+import { saveInvoice, loadInvoice, clearInvoice } from "@/lib/storage";
+import EditorToolbar from "./EditorToolbar";
+import ChatPanel from "./ChatPanel";
+import SettingsPanel from "./SettingsPanel";
+import InvoiceCanvas from "./InvoiceCanvas";
+
+const INITIAL_MESSAGES: ChatMessage[] = [
+  {
+    role: "assistant",
+    text: "Hello! I'm your AI invoice assistant. Tell me what you'd like to create or edit — try 'Make this a consulting invoice for $5,000' or 'Change the theme to blue'.",
+  },
+];
+
+export default function InvoiceEditor() {
+  const [invoice, setInvoice] = useState<InvoiceData>(() => {
+    if (typeof window !== "undefined") {
+      return loadInvoice() ?? { ...SAMPLE_INVOICE, id: uuidv4() };
+    }
+    return { ...SAMPLE_INVOICE, id: uuidv4() };
+  });
+
+  const [isEditMode, setIsEditMode] = useState(true);
+  const [scale, setScale] = useState(0.85);
+  const [isAutoFit, setIsAutoFit] = useState(true);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Persist to localStorage on every invoice change
+  useEffect(() => {
+    saveInvoice(invoice);
+  }, [invoice]);
+
+  // Auto-fit scale on mount and resize
+  useEffect(() => {
+    if (isEditMode) {
+      setScale(1);
+      return;
+    }
+
+    const fit = () => {
+      if (!isAutoFit) return;
+      if (!containerRef.current) return;
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      const scaleW = (width - 80) / 816;
+      const scaleH = (height - 80) / 1056;
+      setScale(Math.min(scaleW, scaleH, 1));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [aiPanelOpen, isEditMode, isAutoFit]);
+
+  // Keyboard shortcuts for zooming
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isEditMode) return;
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+")) {
+        e.preventDefault();
+        setIsAutoFit(false);
+        setScale((s) => Math.min(s + 0.1, 2));
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "-") {
+        e.preventDefault();
+        setIsAutoFit(false);
+        setScale((s) => Math.max(s - 0.1, 0.25));
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+        e.preventDefault();
+        setIsAutoFit(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isEditMode]);
+
+  const updateInvoice = useCallback((updates: Partial<InvoiceData>) => {
+    setInvoice((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  const handleReset = () => {
+    clearInvoice();
+    setInvoice({ ...SAMPLE_INVOICE, id: uuidv4() });
+    setMessages(INITIAL_MESSAGES);
+    toast.success("Invoice reset to default");
+  };
+
+  const handleZoomIn = () => {
+    if (isEditMode) return;
+    setIsAutoFit(false);
+    setScale((s) => Math.min(s + 0.1, 2));
+  };
+  const handleZoomOut = () => {
+    if (isEditMode) return;
+    setIsAutoFit(false);
+    setScale((s) => Math.max(s - 0.1, 0.25));
+  };
+  const handleZoomFit = () => {
+    if (isEditMode) {
+      setScale(1);
+      return;
+    }
+    setIsAutoFit(true);
+    if (!containerRef.current) return;
+    const { width, height } = containerRef.current.getBoundingClientRect();
+    const scaleW = (width - 80) / 816;
+    const scaleH = (height - 80) / 1056;
+    setScale(Math.min(scaleW, scaleH, 1));
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!canvasRef.current) return;
+    setIsExporting(true);
+    const toastId = toast.loading("Generating PDF...");
+    try {
+      const { toPng } = await import("html-to-image");
+      const { jsPDF } = await import("jspdf");
+
+      // Temporarily switch to preview mode so edit UI (dashed borders, delete buttons) is hidden
+      const wasEditMode = isEditMode;
+      if (wasEditMode) {
+        setIsEditMode(false);
+        await new Promise((r) => setTimeout(r, 150));
+      }
+
+      const el = canvasRef.current;
+      const actualHeight = el.scrollHeight;
+
+      const imgData = await toPng(el, {
+        quality: 1.0,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        width: 816,
+        height: actualHeight,
+        style: { transform: "scale(1)", transformOrigin: "top left", margin: "0", position: "static" },
+      });
+
+      if (wasEditMode) setIsEditMode(true);
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [816, actualHeight] });
+      pdf.addImage(imgData, "PNG", 0, 0, 816, actualHeight);
+      pdf.save(`${invoice.invoiceNumber || "invoice"}.pdf`);
+
+      toast.success("PDF downloaded!", { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF", { id: toastId });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleSendMessage = async (prompt: string) => {
+    const userMsg: ChatMessage = { role: "user", text: prompt };
+    setMessages((prev) => [...prev, userMsg]);
+    setIsGenerating(true);
+
+    try {
+      const res = await fetch("/api/invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, history: messages, invoice }),
+      });
+
+      const json = await res.json();
+
+      setMessages((prev) => [...prev, { role: "assistant", text: json.message }]);
+
+      if (json.data && Object.keys(json.data).length > 0) {
+        updateInvoice(json.data);
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "Sorry, something went wrong. Please try again." },
+      ]);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
+      <EditorToolbar
+        isEditMode={isEditMode}
+        onToggleEditMode={() => setIsEditMode((v) => !v)}
+        aiPanelOpen={aiPanelOpen}
+        onToggleAI={() => setAiPanelOpen((v) => !v)}
+        scale={scale}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomFit={handleZoomFit}
+        onDownloadPDF={handleDownloadPDF}
+        isExporting={isExporting}
+      />
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Settings Panel */}
+        <SettingsPanel
+          invoice={invoice}
+          onChange={updateInvoice}
+          onReset={handleReset}
+        />
+
+        {/* AI Chat Panel */}
+        {aiPanelOpen && (
+          <ChatPanel
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isGenerating={isGenerating}
+          />
+        )}
+
+        {/* ── Canvas Area ── */}
+        <div
+          ref={containerRef}
+          className="flex-1 overflow-auto bg-[#f0f0f0] flex items-start justify-center py-8"
+          style={{ backgroundImage: "radial-gradient(#d1d5db 1px, transparent 1px)", backgroundSize: "20px 20px" }}
+          onWheel={(e) => {
+            if (isEditMode) return;
+            if (e.altKey || e.ctrlKey || e.metaKey) {
+              e.preventDefault();
+              setIsAutoFit(false);
+              setScale((s) => Math.max(0.25, Math.min(2, s - e.deltaY * 0.001)));
+            }
+          }}
+        >
+
+          {/* Shadow + canvas wrapper */}
+          <div
+            className="transition-all duration-300 ease-in-out"
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: "top center",
+              width: 816,
+              // The parent container handles the layout. 
+              // We need to ensure the container knows the scaled height to avoid extra scroll space.
+              height: 1056, 
+              display: "flex",
+              flexDirection: "column",
+              marginBottom: -1056 * (1 - scale), // Pull up the next element (scrollbar space)
+              marginRight: -816 * ((1 - scale) / 2),
+              marginLeft: -816 * ((1 - scale) / 2),
+              boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 20px 60px -10px rgba(0,0,0,0.2)",
+              borderRadius: 2,
+            }}
+          >
+            <InvoiceCanvas
+              ref={canvasRef}
+              invoice={invoice}
+              onChange={updateInvoice}
+              isEditMode={isEditMode}
+            />
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+  );
+}

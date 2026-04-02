@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { ArrowRight02Icon, PlayIcon } from "@hugeicons/core-free-icons";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/landing/LandingButton";
 
 export default function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);

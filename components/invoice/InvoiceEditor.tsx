@@ -8,8 +8,10 @@ import { SAMPLE_INVOICE } from "@/lib/invoice-defaults";
 import { saveInvoice, loadInvoice, clearInvoice } from "@/lib/storage";
 import EditorToolbar from "./EditorToolbar";
 import ChatPanel from "./ChatPanel";
-import SettingsPanel from "./SettingsPanel";
 import InvoiceCanvas from "./InvoiceCanvas";
+import dynamic from "next/dynamic";
+
+const SettingsPanel = dynamic(() => import("./SettingsPanel"), { ssr: false });
 
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
@@ -138,6 +140,20 @@ export default function InvoiceEditor() {
       const el = canvasRef.current;
       const actualHeight = el.scrollHeight;
 
+      // WORKAROUND: Temporarily disable stylesheets that cause the 'cssRules' access error
+      const sheets = Array.from(document.styleSheets);
+      const crossOriginSheets: CSSStyleSheet[] = [];
+      for (const sheet of sheets) {
+        try {
+          // Attempt to access cssRules to trigger the security error if it exists
+          const _ = sheet.cssRules;
+        } catch (e) {
+          // If it fails, disable the stylesheet temporarily and track it
+          sheet.disabled = true;
+          crossOriginSheets.push(sheet);
+        }
+      }
+
       const imgData = await toPng(el, {
         quality: 1.0,
         pixelRatio: 2,
@@ -146,6 +162,11 @@ export default function InvoiceEditor() {
         height: actualHeight,
         style: { transform: "scale(1)", transformOrigin: "top left", margin: "0", position: "static" },
       });
+
+      // Restore the disabled stylesheets
+      for (const sheet of crossOriginSheets) {
+        sheet.disabled = false;
+      }
 
       if (wasEditMode) setIsEditMode(true);
 

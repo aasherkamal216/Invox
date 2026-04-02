@@ -1,76 +1,95 @@
 "use client";
 
-import { Slider as SliderPrimitive } from "@base-ui/react/slider";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+export interface SliderProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
+  value?: number | number[];
+  onValueChange?: (value: number | number[]) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
 export function Slider({
   className,
-  children,
-  defaultValue,
   value,
+  onValueChange,
   min = 0,
   max = 100,
+  step = 1,
   ...props
-}: SliderPrimitive.Root.Props): React.ReactElement {
-  const _values = React.useMemo(() => {
-    if (value !== undefined) {
-      return Array.isArray(value) ? value : [value];
-    }
-    if (defaultValue !== undefined) {
-      return Array.isArray(defaultValue) ? defaultValue : [defaultValue];
-    }
-    return [min];
-  }, [value, defaultValue, min]);
+}: SliderProps): React.ReactElement {
+  const currentValue = Array.isArray(value) ? value[0] : value ?? min;
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    onValueChange?.(Array.isArray(value) ? [val] : val);
+  };
+
+  const percentage = ((currentValue - min) / (max - min)) * 100;
 
   return (
-    <SliderPrimitive.Root
-      className={cn("data-[orientation=horizontal]:w-full", className)}
-      defaultValue={defaultValue}
-      max={max}
-      min={min}
-      thumbAlignment="edge"
-      value={value}
-      {...props}
-    >
-      {children}
-      <SliderPrimitive.Control
-        className="flex touch-none select-none data-disabled:pointer-events-none data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=horizontal]:w-full data-[orientation=horizontal]:min-w-44 data-[orientation=vertical]:flex-col data-disabled:opacity-64"
-        data-slot="slider-control"
-      >
-        <SliderPrimitive.Track
-          className="relative grow select-none before:absolute before:rounded-full before:bg-input data-[orientation=horizontal]:h-1 data-[orientation=vertical]:h-full data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-1 data-[orientation=horizontal]:before:inset-x-0.5 data-[orientation=vertical]:before:inset-x-0 data-[orientation=horizontal]:before:inset-y-0 data-[orientation=vertical]:before:inset-y-0.5"
-          data-slot="slider-track"
-        >
-          <SliderPrimitive.Indicator
-            className="select-none rounded-full bg-primary data-[orientation=horizontal]:ms-0.5 data-[orientation=vertical]:mb-0.5"
-            data-slot="slider-indicator"
-          />
-          {Array.from({ length: _values.length }, (_, index) => (
-            <SliderPrimitive.Thumb
-              className="block size-5 shrink-0 select-none rounded-full border border-input bg-white not-dark:bg-clip-padding shadow-xs/5 outline-none transition-[box-shadow,scale] before:absolute before:inset-0 before:rounded-full before:shadow-[0_1px_--theme(--color-black/4%)] has-focus-visible:ring-[3px] has-focus-visible:ring-ring/24 data-dragging:scale-120 sm:size-4 dark:border-background dark:has-focus-visible:ring-ring/48 [:has(*:focus-visible),[data-dragging]]:shadow-none"
-              data-slot="slider-thumb"
-              index={index}
-              key={String(index)}
-            />
-          ))}
-        </SliderPrimitive.Track>
-      </SliderPrimitive.Control>
-    </SliderPrimitive.Root>
+    <div className={cn("relative w-full h-8 flex items-center group", className)}>
+      {/* Custom Track Background */}
+      <div className="absolute w-full h-1 bg-muted rounded-full" />
+      
+      {/* Custom Indicator (Filled part) */}
+      <div 
+        className="absolute h-1 bg-primary rounded-full"
+        style={{ width: `${percentage}%` }}
+      />
+      
+      {/* Native Range Input (Transparent, centered on Track) */}
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={currentValue}
+        onChange={handleChange}
+        className={cn(
+          "absolute w-full h-1 appearance-none bg-transparent cursor-pointer z-10",
+          // Webkit Thumb Styling
+          "[&::-webkit-slider-thumb]:appearance-none",
+          "[&::-webkit-slider-thumb]:size-5 sm:[&::-webkit-slider-thumb]:size-4",
+          "[&::-webkit-slider-thumb]:rounded-full",
+          "[&::-webkit-slider-thumb]:bg-white",
+          "[&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-input",
+          "[&::-webkit-slider-thumb]:shadow-xs/5",
+          "[&::-webkit-slider-thumb]:transition-[scale,box-shadow]",
+          "[&::-webkit-slider-thumb]:active:scale-110",
+          "hover:[&::-webkit-slider-thumb]:border-primary/50",
+          "focus-visible:[&::-webkit-slider-thumb]:ring-[3px] focus-visible:[&::-webkit-slider-thumb]:ring-ring/24",
+          // Moz Thumb Styling
+          "[&::-moz-range-thumb]:size-5 sm:[&::-moz-range-thumb]:size-4",
+          "[&::-moz-range-thumb]:rounded-full",
+          "[&::-moz-range-thumb]:bg-white",
+          "[&::-moz-range-thumb]:border [&::-moz-range-thumb]:border-input",
+          "[&::-moz-range-thumb]:shadow-xs/5",
+          "[&::-moz-range-thumb]:transition-[scale,box-shadow]",
+          "[&::-moz-range-thumb]:active:scale-110",
+          "hover:[&::-moz-range-thumb]:border-primary/50",
+          "focus-visible:[&::-moz-range-thumb]:ring-[3px] focus-visible:[&::-moz-range-thumb]:ring-ring/24",
+          "border-none outline-none"
+        )}
+        {...props}
+      />
+    </div>
   );
 }
 
 export function SliderValue({
   className,
+  children,
   ...props
-}: SliderPrimitive.Value.Props): React.ReactElement {
+}: React.HTMLAttributes<HTMLDivElement>): React.ReactElement {
   return (
-    <SliderPrimitive.Value
-      className={cn("flex justify-end text-sm", className)}
-      data-slot="slider-value"
+    <div
+      className={cn("flex justify-end text-sm text-muted-foreground font-medium", className)}
       {...props}
-    />
+    >
+      {children}
+    </div>
   );
 }
-
-export { SliderPrimitive };

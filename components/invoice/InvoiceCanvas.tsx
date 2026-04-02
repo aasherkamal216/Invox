@@ -374,22 +374,22 @@ function StandardTemplate({
         {/* Right: Totals */}
         <div style={{ minWidth: 260 }}>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "#6b7280", borderBottom: "1px solid #f3f4f6" }}>
-            <span><EF value={invoice.labels.subtotal} onSave={(v) => updateLabel("subtotal", v)} /></span>
-            <span>{fmt(invoice.currency, subtotal)}</span>
+            <span style={{ whiteSpace: "nowrap" }}><EF value={invoice.labels.subtotal} onSave={(v) => updateLabel("subtotal", v)} /></span>
+            <span style={{ fontWeight: 500 }}>{fmt(invoice.currency, subtotal)}</span>
           </div>
           {invoice.taxRate > 0 && (
             <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "#6b7280", borderBottom: "1px solid #f3f4f6" }}>
-              <span>
+              <span style={{ whiteSpace: "nowrap" }}>
                 <EF value={invoice.labels.tax} onSave={(v) => updateLabel("tax", v)} />
                 {" "}({invoice.taxRate}%)
               </span>
-              <span>{fmt(invoice.currency, taxAmount)}</span>
+              <span style={{ fontWeight: 500 }}>{fmt(invoice.currency, taxAmount)}</span>
             </div>
           )}
           {invoice.discount > 0 && (
             <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "#16a34a", borderBottom: "1px solid #f3f4f6" }}>
-              <span><EF value={invoice.labels.discount} onSave={(v) => updateLabel("discount", v)} /></span>
-              <span>-{fmt(invoice.currency, invoice.discount)}</span>
+              <span style={{ whiteSpace: "nowrap" }}><EF value={invoice.labels.discount} onSave={(v) => updateLabel("discount", v)} /></span>
+              <span style={{ fontWeight: 500 }}>-{fmt(invoice.currency, invoice.discount)}</span>
             </div>
           )}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px", marginTop: 4, background: theme, borderRadius: 8, color: "#fff" }}>

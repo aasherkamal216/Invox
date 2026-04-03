@@ -18,7 +18,7 @@ No test suite is configured yet.
 
 AI-powered invoice generator. Users can create and edit invoices through:
 1. A **chat interface** backed by an OpenAI Agents SDK agent (server-side, with tools)
-2. A **manual settings panel** for branding, layout, typography, custom fields, signature
+2. A **manual settings panel** for branding, layout, typography, signature
 3. **Inline editing** directly on the invoice preview
 
 ## Stack
@@ -26,7 +26,7 @@ AI-powered invoice generator. Users can create and edit invoices through:
 - **Next.js 16** (App Router) — read `node_modules/next/dist/docs/` before writing any Next.js code
 - **React 19** with TypeScript
 - **Tailwind CSS v4** (PostCSS plugin, not Vite plugin — no `tailwind.config.*` file)
-- **shadcn/ui** components (to be installed)
+- **Coss UI** (`https://coss.com/ui`) — component library built on Base UI + Tailwind CSS. Components are copy-paste-and-own (not a package dependency); they live in `components/ui/`. Docs for LLMs: `https://coss.com/ui/llms.txt`
 - **OpenAI Agents SDK** (`@openai/agents`) for the AI backend — use Server Components / Route Handlers for all agent calls, never the client
 
 ## App Router Patterns (Next.js 16)
@@ -41,25 +41,41 @@ AI-powered invoice generator. Users can create and edit invoices through:
 
 ```
 app/
-  layout.tsx          # Root layout (Server Component)
-  page.tsx            # Home / main invoice page (Server shell + client subtree)
+  layout.tsx            # Root layout (Server Component, loads fonts via @import)
+  page.tsx              # Landing page (Navbar + HeroSection)
+  editor/
+    page.tsx            # Invoice editor page — dynamically imports InvoiceEditor (SSR disabled)
   api/
     invoice/
-      route.ts        # POST — OpenAI agent processes invoice prompts
+      route.ts          # POST — OpenAI Agents SDK agent processes invoice prompts
 components/
   invoice/
-    InvoiceEditor.tsx # "use client" — rendered invoice with inline editing
-    InvoiceForm.tsx   # "use client" — settings sidebar panel
-    EditableField.tsx # "use client" — click-to-edit field on the invoice
-  ui/                 # shadcn/ui components
+    InvoiceEditor.tsx   # "use client" — top-level editor shell, manages invoice state
+    InvoiceCanvas.tsx   # "use client" — renders the invoice; routes to template headers, shared items/totals/signature
+    EditableField.tsx   # "use client" — click-to-edit field (text, number, date, multiline)
+    EditorToolbar.tsx   # "use client" — top toolbar (mode toggle, PDF export, theme color, zoom)
+    SettingsPanel.tsx   # "use client" — tabbed sidebar (Templates, Branding, Typography, Document, Financials)
+    ChatPanel.tsx       # "use client" — AI chat interface, streams to /api/invoice
+    SignaturePad.tsx    # "use client" — draw or type signature using signature_pad
+  landing/
+    Navbar.tsx          # Landing page navigation
+    HeroSection.tsx     # Landing page hero
+    LandingButton.tsx   # Reusable CTA button for landing page
+  ui/                   # shadcn/ui + custom primitives (button, input, select, slider, tabs, accordion, collapsible, date-picker, toolbar, toggle-group, etc.)
 lib/
-  types.ts            # InvoiceData, InvoiceItem, InvoiceField, InvoiceLabels types
-  agent.ts            # OpenAI Agents SDK agent definition and tools
+  types.ts              # InvoiceData, InvoiceItem, InvoiceLabels, Template types
+  invoice-defaults.ts   # DEFAULT_INVOICE, DEFAULT_LABELS, TEMPLATES array, FONT_OPTIONS, SAMPLE_INVOICE
+  storage.ts            # localStorage helpers for persisting invoice state
+  utils.ts              # cn() and other utilities
+hooks/
+  use-media-query.ts    # Responsive breakpoint hook
 ```
 
-The invoice editor is a fully interactive client subtree. The AI agent runs server-side via a Route Handler — the client streams requests to `/api/invoice` and receives partial invoice data updates.
+The invoice editor is a fully interactive client subtree (`InvoiceEditor` → `InvoiceCanvas` + `SettingsPanel` + `ChatPanel`). The AI agent runs server-side via a Route Handler — the client posts to `/api/invoice` and receives partial invoice data updates.
 
-## InvoiceData Type (from prototype — source of truth)
+`SettingsPanel` is dynamically imported with `{ ssr: false }` in the editor page to avoid hydration issues.
+
+## InvoiceData Type (source of truth in `lib/types.ts`)
 
 ```ts
 type InvoiceData = {
@@ -74,7 +90,6 @@ type InvoiceData = {
   dueDate: string;
   fromDetails: string;     // multiline
   toDetails: string;       // multiline
-  customFields: InvoiceField[];
   items: InvoiceItem[];
   currency: string;        // symbol, e.g. "$"
   taxRate: number;
@@ -82,29 +97,33 @@ type InvoiceData = {
   notes: string;
   terms: string;
   themeColor: string;      // hex
-  template: "standard" | "modern" | "minimal" | "classic" | "elegant" | "bold"
-           | "corporate" | "creative" | "startup" | "receipt" | "gradient" | "retro";
+  template: Template;
   fontFamily?: string;
   signature?: { type: "text" | "draw"; value: string };
   labels: InvoiceLabels;   // all visible label strings, fully customizable
 };
 ```
 
-## Templates (12 total, all must be implemented)
+Note: `customFields` has been removed from the project. Do not re-introduce it.
 
-standard, modern, minimal, classic, elegant, bold, corporate, creative, startup, receipt, gradient, retro
+## Templates (12 total — all implemented)
 
-Each template controls header layout, typography style, and decorative elements. The items table and totals section are shared across templates.
+`standard`, `modern`, `minimal`, `classic`, `elegant`, `bold`, `corporate`, `creative`, `startup`, `receipt`, `gradient`, `retro`
 
-## Key Features to Implement (from prototype)
+Each template renders its own header section (from/to/dates/logo layout) inside `InvoiceCanvas`. The items table, totals, notes/terms, and signature are **shared** across all templates and rendered after the template header.
 
-- **Inline editing**: clicking any field on the invoice enters edit mode (dashed border → active input). `EditableField` handles text, number, date, and multiline types.
+The `TEMPLATES` array in `lib/invoice-defaults.ts` includes `id`, `label`, and `preview` (Tailwind classes used for the thumbnail in SettingsPanel).
+
+## Implemented Features
+
+- **Inline editing**: clicking any field on the invoice enters edit mode (dashed border → active input). `EditableField` handles `text`, `number`, `date`, and `multiline` types.
 - **Dual mode**: "Edit" mode (full-width, inline editable) vs "Preview" mode (816×1056px, zoomable).
-- **PDF export**: capture the invoice at 816×1056px (1:1.294 ratio, US Letter) using `html-to-image`, then `jsPDF`.
+- **PDF export**: capture the invoice at 816×1056px using `html-to-image`, then `jsPDF`. Cross-origin stylesheets are temporarily disabled during capture to avoid `cssRules` errors.
 - **Logo upload**: base64 data URL stored in `invoiceData.logoUrl`.
 - **Signature**: text (rendered as italic serif) or drawn (canvas → base64 PNG via `signature_pad`).
-- **Custom fields**: arbitrary key-value pairs shown in the invoice header area.
-- **Label customization**: every visible label (Title, "Bill To", "Qty", etc.) is editable inline on the invoice.
+- **Label customization**: every visible label ("Bill To", "Qty", etc.) is editable inline on the invoice.
+- **AI chat**: natural language edits streamed through `/api/invoice` using OpenAI Agents SDK.
+- **Local persistence**: invoice state is saved to localStorage via `lib/storage.ts`.
 
 ## AI Agent Design
 
@@ -113,7 +132,6 @@ The OpenAI Agents SDK agent (not a simple API call) must have **tools** to manip
 - `update_invoice_fields` — update top-level fields (title, dates, parties, currency, etc.)
 - `update_items` — replace or merge the items array
 - `update_styling` — change template, themeColor, fontFamily, padding, spacing
-- `add_custom_fields` — add/remove custom fields
 - `apply_template_preset` — set template + themeColor + font as a named style
 
 The agent returns structured diffs, not full invoice replacements, so partial updates are non-destructive.

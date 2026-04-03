@@ -176,8 +176,10 @@ export default function SettingsPanel({ invoice, onChange }: SettingsPanelProps)
                   value={invoice.fontFamily || "Inter, sans-serif"}
                   onValueChange={(val) => onChange({ fontFamily: val ?? undefined })}
                 >
-                  <SelectTrigger className="w-full h-11 rounded-xl">
-                    <SelectValue placeholder="Select a font" />
+                  <SelectTrigger className="w-full h-11 rounded-xl" style={{ fontFamily: invoice.fontFamily || "Inter, sans-serif" }}>
+                    <SelectValue placeholder="Select a font">
+                      {FONT_OPTIONS.find(f => f.value === (invoice.fontFamily || "Inter, sans-serif"))?.label}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="max-h-64">
                     {FONT_OPTIONS.map((f) => (
@@ -299,42 +301,6 @@ export default function SettingsPanel({ invoice, onChange }: SettingsPanelProps)
                   placeholder={"Client name\nAddress\nCity, State ZIP"}
                 />
               </FieldRow>
-            </div>
-          </SectionCollapsible>
-
-          {/* ── Custom Fields ── */}
-          <SectionCollapsible label="Custom Info Details">
-            <div className="flex flex-col gap-3 p-4 pt-2">
-              {invoice.customFields.map((field) => (
-                <div key={field.id} className="flex items-center gap-2 group">
-                  <Input
-                    value={field.label}
-                    onChange={(e) => onChange({ customFields: invoice.customFields.map((f) => f.id === field.id ? { ...f, label: e.target.value } : f) })}
-                    className="h-10 text-sm w-5/12 font-medium"
-                    placeholder="e.g. PO Number"
-                  />
-                  <Input
-                    value={field.value}
-                    onChange={(e) => onChange({ customFields: invoice.customFields.map((f) => f.id === field.id ? { ...f, value: e.target.value } : f) })}
-                    className="h-10 text-sm flex-1"
-                    placeholder="Value"
-                  />
-                  <button
-                    onClick={() => onChange({ customFields: invoice.customFields.filter((f) => f.id !== field.id) })}
-                    className="text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 p-2 rounded-md transition-all shrink-0"
-                    title="Remove field"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              <Button
-                variant="outline"
-                className="h-10 text-sm mt-1 border-dashed border-border/60 hover:border-primary/50 text-muted-foreground w-full flex gap-2 items-center"
-                onClick={() => onChange({ customFields: [...invoice.customFields, { id: crypto.randomUUID(), label: "New Field", value: "" }] })}
-              >
-                <Plus className="w-4 h-4" /> Add Custom Field
-              </Button>
             </div>
           </SectionCollapsible>
 

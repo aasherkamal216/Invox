@@ -235,49 +235,6 @@ function StandardTemplate({
         </div>
       </div>
 
-      {/* ── Custom Fields ── */}
-      {(invoice.customFields.length > 0 || isEditMode) && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
-          {invoice.customFields.map((field) => (
-            <div
-              key={field.id}
-              style={{
-                position: "relative",
-                background: "#f9fafb",
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                padding: "8px 14px",
-                minWidth: 100,
-              }}
-            >
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: theme, marginBottom: 3 }}>
-                <EF value={field.label} onSave={(v) => onChange({ customFields: invoice.customFields.map((f) => f.id === field.id ? { ...f, label: v } : f) })} />
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: "#111827" }}>
-                <EF value={field.value} onSave={(v) => onChange({ customFields: invoice.customFields.map((f) => f.id === field.id ? { ...f, value: v } : f) })} />
-              </div>
-              {isEditMode && (
-                <button
-                  onClick={() => onChange({ customFields: invoice.customFields.filter((f) => f.id !== field.id) })}
-                  style={{ position: "absolute", top: -6, right: -6, width: 16, height: 16, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "none", cursor: "pointer", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
-                  title="Remove"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
-          {isEditMode && (
-            <button
-              onClick={() => onChange({ customFields: [...invoice.customFields, { id: crypto.randomUUID(), label: "Label", value: "Value" }] })}
-              style={{ background: "none", border: `1px dashed ${theme}`, borderRadius: 8, padding: "8px 14px", fontSize: 11, color: theme, cursor: "pointer", minWidth: 80 }}
-            >
-              + Add Field
-            </button>
-          )}
-        </div>
-      )}
-
       {/* ── Items Table ── */}
       <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}>
         <thead>
@@ -313,7 +270,7 @@ function StandardTemplate({
                 <EF value={String(item.quantity)} onSave={(v) => updateItem(item.id, "quantity", parseFloat(v) || 0)} type="number" style={{ textAlign: "center" }} />
               </td>
               <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "right", fontSize: 13 }}>
-                <EF value={String(item.rate)} onSave={(v) => updateItem(item.id, "rate", parseFloat(v) || 0)} type="number" style={{ textAlign: "right" }} />
+                {invoice.currency}<EF value={String(item.rate)} onSave={(v) => updateItem(item.id, "rate", parseFloat(v) || 0)} type="number" style={{ textAlign: "right", paddingLeft: 0 }} />
               </td>
               <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "right", fontSize: 13, fontWeight: 500 }}>
                 {fmt(invoice.currency, item.amount)}

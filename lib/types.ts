@@ -1,9 +1,3 @@
-export type InvoiceField = {
-  id: string;
-  label: string;
-  value: string;
-};
-
 export type InvoiceItem = {
   id: string;
   description: string;
@@ -57,7 +51,6 @@ export type InvoiceData = {
   dueDate: string;
   fromDetails: string;
   toDetails: string;
-  customFields: InvoiceField[];
   items: InvoiceItem[];
   currency: string;
   taxRate: number;

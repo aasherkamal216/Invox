@@ -32,10 +32,6 @@ export const SAMPLE_INVOICE: InvoiceData = {
   dueDate: "2025-05-02",
   fromDetails: "Acme Studio\n123 Design Street\nSan Francisco, CA 94102\ncontact@acmestudio.com",
   toDetails: "Bright Future Inc.\nAttn: Sarah Johnson\n456 Business Ave, Suite 200\nNew York, NY 10001",
-  customFields: [
-    { id: uuidv4(), label: "Project", value: "Brand Identity Redesign" },
-    { id: uuidv4(), label: "PO Number", value: "PO-2025-0042" },
-  ],
   items: [
     { id: uuidv4(), description: "Brand Strategy & Research", quantity: 1, rate: 2500, amount: 2500 },
     { id: uuidv4(), description: "Logo Design (3 concepts)", quantity: 1, rate: 1800, amount: 1800 },

@@ -15,12 +15,7 @@ import { Bot, Settings } from "lucide-react";
 
 const SettingsPanel = dynamic(() => import("./SettingsPanel"), { ssr: false });
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    role: "assistant",
-    text: "Hello! I'm your AI invoice assistant. Tell me what you'd like to create or edit — try 'Make this a consulting invoice for $5,000' or 'Change the theme to blue'.",
-  },
-];
+const INITIAL_MESSAGES: ChatMessage[] = [];
 
 export default function InvoiceEditor() {
   const [invoice, setInvoice] = useState<InvoiceData>(() => {
@@ -98,9 +93,14 @@ export default function InvoiceEditor() {
   const handleReset = () => {
     clearInvoice();
     setInvoice({ ...SAMPLE_INVOICE, id: uuidv4() });
-    setMessages(INITIAL_MESSAGES);
+    setMessages([]);
     setPreviousResponseId(null);
     toast.success("Invoice reset to default");
+  };
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setPreviousResponseId(null);
   };
 
   const handleZoomIn = () => {
@@ -187,7 +187,7 @@ export default function InvoiceEditor() {
     }
   };
 
-  const handleSendMessage = async (prompt: string) => {
+  const handleSendMessage = async (prompt: string, model = "gpt-5.4-mini") => {
     const userMsg: ChatMessage = { role: "user", text: prompt };
     setMessages((prev) => [...prev, userMsg]);
     setIsGenerating(true);
@@ -196,7 +196,7 @@ export default function InvoiceEditor() {
       const res = await fetch("/api/invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: prompt, previousResponseId, invoiceData: invoice }),
+        body: JSON.stringify({ message: prompt, previousResponseId, invoiceData: invoice, model }),
       });
 
       if (!res.ok || !res.body) {
@@ -304,6 +304,7 @@ export default function InvoiceEditor() {
               <ChatPanel
                 messages={messages}
                 onSendMessage={handleSendMessage}
+                onNewChat={handleNewChat}
                 isGenerating={isGenerating}
               />
             </TabsPanel>

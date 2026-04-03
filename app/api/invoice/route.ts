@@ -299,12 +299,16 @@ const SYSTEM_PROMPT = `You are an expert invoice assistant integrated into an AI
 - For "net 30" terms, set dueDate to 30 days from the invoice date and terms="Net 30".
 - Keep text responses brief and action-oriented.`;
 
-const invoiceAgent = new Agent({
-  name: "Invoice Editor",
-  instructions: SYSTEM_PROMPT,
-  model: "gpt-5.4-mini",
-  tools: [getCurrentInvoice, updateInvoiceFields, updateItems, updateStyling, generateInvoice],
-});
+const AGENT_TOOLS = [getCurrentInvoice, updateInvoiceFields, updateItems, updateStyling, generateInvoice];
+
+function createAgent(model: string) {
+  return new Agent({
+    name: "Invoice Editor",
+    instructions: SYSTEM_PROMPT,
+    model,
+    tools: AGENT_TOOLS,
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Route Handler
@@ -314,6 +318,7 @@ export async function POST(req: NextRequest) {
     message: string;
     previousResponseId?: string | null;
     invoiceData: InvoiceData;
+    model?: string;
   };
 
   try {
@@ -325,7 +330,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { message, previousResponseId, invoiceData } = body;
+  const { message, previousResponseId, invoiceData, model = "gpt-5.4-mini" } = body;
+  const invoiceAgent = createAgent(model);
 
   const context: InvoiceContext = {
     invoiceData,

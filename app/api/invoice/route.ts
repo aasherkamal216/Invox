@@ -1,7 +1,8 @@
 export const runtime = "nodejs";
 
 import { NextRequest } from "next/server";
-import { Agent, tool, run } from "@openai/agents";
+import { Agent, tool, run, user } from "@openai/agents";
+import OpenAI from "openai";
 import { z } from "zod";
 import type { InvoiceData, InvoiceItem, Template } from "@/lib/types";
 import type { RunContext } from "@openai/agents";
@@ -78,9 +79,7 @@ const getCurrentInvoice = tool({
   name: "get_current_invoice",
   description:
     "Read the current invoice data. Call this before making changes when you need to inspect existing values — e.g. to reference current item ids for a merge, check the current template, or read existing field values before modifying them.",
-  parameters: z.object({
-    reason: z.string().describe("Brief reason why you need to read the invoice"),
-  }),
+  parameters: z.object({}),
   execute(_input, runCtx) {
     const ctx = getCtx(runCtx);
     return JSON.stringify(ctx.invoiceData);
@@ -297,7 +296,12 @@ const SYSTEM_PROMPT = `You are an expert invoice assistant integrated into an AI
 - If the user says "add an item for X at $Y", infer quantity=1, rate=Y, description=X.
 - If the user asks to change the currency to euros, set currency="€".
 - For "net 30" terms, set dueDate to 30 days from the invoice date and terms="Net 30".
-- Keep text responses brief and action-oriented.`;
+- Keep text responses brief and action-oriented.
+
+## Attached Files
+If the user attaches an image (PNG/JPG), carefully examine it. It may be a photo of an existing invoice, a logo, a receipt, or a reference design. Extract any relevant information (company names, line items, amounts, dates, styling) and use it to populate or update the invoice accordingly. Always call a tool to apply what you extract — never just describe it.
+If the user attaches a PDF, treat it the same way: read its content, extract invoice-relevant data (parties, items, totals, terms), and apply it using the appropriate tools.
+If no explicit instruction accompanies the attachment, assume the user wants you to recreate or populate the invoice from the file's content.`;
 
 const AGENT_TOOLS = [getCurrentInvoice, updateInvoiceFields, updateItems, updateStyling, generateInvoice];
 
@@ -314,11 +318,14 @@ function createAgent(model: string) {
 // Route Handler
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
+  type AttachedFile = { name: string; mimeType: string; base64: string };
+
   let body: {
     message: string;
     previousResponseId?: string | null;
     invoiceData: InvoiceData;
     model?: string;
+    files?: AttachedFile[];
   };
 
   try {
@@ -330,8 +337,39 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { message, previousResponseId, invoiceData, model = "gpt-5.4-mini" } = body;
+  const { message, previousResponseId, invoiceData, model = "gpt-5.4-mini", files } = body;
   const invoiceAgent = createAgent(model);
+
+  // Build multimodal content array when files are attached
+  type ContentItem =
+    | { type: "input_text"; text: string }
+    | { type: "input_image"; image: string }
+    | { type: "input_file"; file: { id: string }; filename: string };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let agentInput: string | any[];
+
+  if (files && files.length > 0) {
+    const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const contentItems: ContentItem[] = [{ type: "input_text", text: message }];
+
+    for (const f of files) {
+      if (f.mimeType === "application/pdf") {
+        const buffer = Buffer.from(f.base64, "base64");
+        const fileObj = new File([buffer], f.name, { type: f.mimeType });
+        const uploaded = await openaiClient.files.create({ file: fileObj, purpose: "user_data" });
+        contentItems.push({ type: "input_file", file: { id: uploaded.id } });
+      } else {
+        // PNG / JPG — pass as data URL
+        contentItems.push({ type: "input_image", image: `data:${f.mimeType};base64,${f.base64}` });
+      }
+    }
+
+    // run() accepts AgentInputItem[] — wrap the user message in an array
+    agentInput = [user(contentItems)];
+  } else {
+    agentInput = message;
+  }
 
   const context: InvoiceContext = {
     invoiceData,
@@ -347,7 +385,7 @@ export async function POST(req: NextRequest) {
       };
 
       try {
-        const agentStream = await run(invoiceAgent, message, {
+        const agentStream = await run(invoiceAgent, agentInput, {
           stream: true,
           previousResponseId: previousResponseId ?? undefined,
           context,

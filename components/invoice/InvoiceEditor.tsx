@@ -11,7 +11,7 @@ import ChatPanel from "./ChatPanel";
 import InvoiceCanvas from "./InvoiceCanvas";
 import dynamic from "next/dynamic";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
-import { Bot, Settings } from "lucide-react";
+import { Sparkles, Settings } from "lucide-react";
 
 const SettingsPanel = dynamic(() => import("./SettingsPanel"), { ssr: false });
 
@@ -187,8 +187,13 @@ export default function InvoiceEditor() {
     }
   };
 
-  const handleSendMessage = async (prompt: string, model = "gpt-5.4-mini") => {
-    const userMsg: ChatMessage = { role: "user", text: prompt };
+  const handleSendMessage = async (
+    prompt: string,
+    model = "gpt-5.4-mini",
+    files?: { name: string; mimeType: string; base64: string }[],
+    attachments?: { name: string; mimeType: string; preview?: string }[]
+  ) => {
+    const userMsg: ChatMessage = { role: "user", text: prompt, attachments };
     setMessages((prev) => [...prev, userMsg]);
     setIsGenerating(true);
 
@@ -196,7 +201,7 @@ export default function InvoiceEditor() {
       const res = await fetch("/api/invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: prompt, previousResponseId, invoiceData: invoice, model }),
+        body: JSON.stringify({ message: prompt, previousResponseId, invoiceData: invoice, model, files }),
       });
 
       if (!res.ok || !res.body) {
@@ -287,7 +292,7 @@ export default function InvoiceEditor() {
                   Settings
                 </TabsTab>
                 <TabsTab value="ai" className="font-semibold text-xs h-8">
-                  <Bot className="w-3.5 h-3.5 mr-1" />
+                  <Sparkles className="w-3.5 h-3.5 mr-1" />
                   AI Assistant
                 </TabsTab>
               </TabsList>

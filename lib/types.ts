@@ -67,4 +67,5 @@ export type InvoiceData = {
 export type ChatMessage = {
   role: "user" | "assistant";
   text: string;
+  attachments?: { name: string; mimeType: string; preview?: string }[];
 };

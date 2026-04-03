@@ -1,6 +1,6 @@
 import type { InvoiceData } from "./types";
 
-const STORAGE_KEY = "invoiceai_draft";
+const STORAGE_KEY = "invox_draft";
 
 export function saveInvoice(data: InvoiceData): void {
   try {

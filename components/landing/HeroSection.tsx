@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 import { ArrowRight02Icon, PlayIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/landing/LandingButton";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -35,9 +37,16 @@ export default function HeroSection() {
           style={{ top: "0" }}
         >
           <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90"
-            style={{ backgroundImage: "url('/background-scene.png')" }}
-          />
+            className="absolute inset-0 opacity-90"
+          >
+            <Image
+              src="/background-scene.png"
+              alt="Background"
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white" />
       </div>
@@ -56,20 +65,21 @@ export default function HeroSection() {
           </h1>
 
           <p className="animate-fade-in-up mt-4 max-w-sm mx-auto text-base text-black/60 leading-relaxed font-medium" style={{ animationDelay: "0.1s" }}>
-            The AI-powered invoicing tool for modern teams.
+            The smart invoicing tool for freelancers and small businesses.
             Fast, professional, and effortless.
           </p>
 
           {/* CTAs */}
           <div className="animate-fade-in-up flex items-center justify-center gap-4 mt-8" style={{ animationDelay: "0.2s" }}>
-            <Button
-              className="min-w-[190px]"
-              icon={ArrowRight02Icon}
-              iconPosition="right"
-              onClick={() => router.push("/editor")}
-            >
-              Start Creating
-            </Button>
+            <Link href="/editor">
+              <Button
+                className="min-w-[190px]"
+                icon={ArrowRight02Icon}
+                iconPosition="right"
+              >
+                Start Creating
+              </Button>
+            </Link>
             <Button
               variant="glass-outline"
               className="min-w-[190px]"

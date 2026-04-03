@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { RotateCcw, FileText, Edit3, Eye, ZoomOut, Maximize, ZoomIn, Download } from "lucide-react";
@@ -45,11 +46,9 @@ export default function EditorToolbar({
       {/* Left: Logo */}
       <div className="flex items-center gap-3">
         <Link href="/" className="flex items-center gap-1.5 group">
-          <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-            <FileText className="w-3.5 h-3.5 text-white" />
-          </div>
+          <Image src="/3d.png" alt="Invox Logo" width={24} height={24} className="rounded-md" />
           <span className="text-sm font-semibold tracking-tight group-hover:opacity-80 transition-opacity">
-            Invoice<span className="text-primary">AI</span>
+            Invox
           </span>
         </Link>
       </div>

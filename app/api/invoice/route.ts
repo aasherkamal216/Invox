@@ -261,7 +261,7 @@ const generateInvoice = tool({
 // ---------------------------------------------------------------------------
 // Agent (module-scope — created once, not per request)
 // ---------------------------------------------------------------------------
-const SYSTEM_PROMPT = `You are an expert invoice assistant integrated into an AI-powered invoice generator. Your job is to help users create and edit professional invoices.
+const SYSTEM_PROMPT = `You are an expert invoice assistant integrated into an AI-powered invoice generator called "Invox". Your job is to help users create and edit professional invoices.
 
 ## Core Rules
 - ALWAYS call a tool to make any change. Never just describe a change in text — execute it.
@@ -344,7 +344,7 @@ export async function POST(req: NextRequest) {
   type ContentItem =
     | { type: "input_text"; text: string }
     | { type: "input_image"; image: string }
-    | { type: "input_file"; file: { id: string }; filename: string };
+    | { type: "input_file"; file: { id: string }};
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let agentInput: string | any[];

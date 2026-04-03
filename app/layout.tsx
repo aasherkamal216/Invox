@@ -27,9 +27,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "InvoiceAI — Create Beautiful Invoices with AI",
+  title: "Invox — Create Beautiful Invoices with AI",
   description:
-    "AI-powered invoice generator. Create professional invoices in seconds with intelligent automation, 12 stunning templates, and seamless PDF export.",
+    "AI-powered invoice generator for freelancers and small businesses. Create professional invoices in seconds with intelligent automation, stunning templates, and seamless PDF export.",
 };
 
 export default function RootLayout({

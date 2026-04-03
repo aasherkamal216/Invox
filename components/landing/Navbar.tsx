@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -26,8 +27,9 @@ export default function Navbar() {
         `}
       >
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <span className="font-bold text-base tracking-tight text-foreground">InvoiceAI</span>
+        <Link href="/" className="flex items-center gap-2 group">
+          <Image src="/3d.png" alt="Invox Logo" width={24} height={24} className="rounded-lg" />
+          <span className="font-bold text-base tracking-tight text-foreground">Invox</span>
         </Link>
 
         {/* Action using our custom red glass button, but scaled down for navbar */}

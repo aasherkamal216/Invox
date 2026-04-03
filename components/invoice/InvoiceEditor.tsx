@@ -37,6 +37,7 @@ export default function InvoiceEditor() {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [previousResponseId, setPreviousResponseId] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -98,6 +99,7 @@ export default function InvoiceEditor() {
     clearInvoice();
     setInvoice({ ...SAMPLE_INVOICE, id: uuidv4() });
     setMessages(INITIAL_MESSAGES);
+    setPreviousResponseId(null);
     toast.success("Invoice reset to default");
   };
 
@@ -194,15 +196,61 @@ export default function InvoiceEditor() {
       const res = await fetch("/api/invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, history: messages, invoice }),
+        body: JSON.stringify({ message: prompt, previousResponseId, invoiceData: invoice }),
       });
 
-      const json = await res.json();
+      if (!res.ok || !res.body) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", text: `Error: Server returned ${res.status}. Please try again.` },
+        ]);
+        return;
+      }
 
-      setMessages((prev) => [...prev, { role: "assistant", text: json.message }]);
+      // Add an empty assistant bubble that will be filled as text streams in
+      setMessages((prev) => [...prev, { role: "assistant", text: "" }]);
 
-      if (json.data && Object.keys(json.data).length > 0) {
-        updateInvoice(json.data);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? ""; // keep incomplete last line
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "text") {
+              setMessages((prev) => {
+                const msgs = [...prev];
+                const last = msgs[msgs.length - 1];
+                if (last?.role === "assistant") {
+                  msgs[msgs.length - 1] = { ...last, text: last.text + event.delta };
+                }
+                return msgs;
+              });
+            } else if (event.type === "patch") {
+              updateInvoice(event.data);
+            } else if (event.type === "done") {
+              setPreviousResponseId(event.lastResponseId);
+              setIsGenerating(false);
+            } else if (event.type === "error") {
+              setMessages((prev) => [
+                ...prev,
+                { role: "assistant", text: `Error: ${event.message}` },
+              ]);
+              setIsGenerating(false);
+            }
+          } catch {
+            // skip malformed SSE lines
+          }
+        }
       }
     } catch {
       setMessages((prev) => [

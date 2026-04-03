@@ -56,10 +56,13 @@ export default function ChatPanel({ messages, onSendMessage, isGenerating }: Cha
                 )}
               >
                 {msg.text}
+                {msg.role === "assistant" && isGenerating && i === messages.length - 1 && (
+                  <span className="inline-block w-0.5 h-3.5 bg-foreground/60 ml-0.5 animate-pulse align-middle" />
+                )}
               </div>
             </div>
           ))}
-          {isGenerating && (
+          {isGenerating && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex gap-2 mb-2">
               <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
                 <Bot className="w-4 h-4 text-primary" />

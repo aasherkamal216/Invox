@@ -76,16 +76,16 @@ export const FONT_OPTIONS = [
 
 
 export const TEMPLATES = [
-  { id: "standard", label: "Standard" },
-  { id: "modern", label: "Modern" },
-  { id: "minimal", label: "Minimal" },
-  { id: "classic", label: "Classic" },
-  { id: "elegant", label: "Elegant" },
-  { id: "bold", label: "Bold" },
-  { id: "corporate", label: "Corporate" },
-  { id: "creative", label: "Creative" },
-  { id: "startup", label: "Startup" },
-  { id: "receipt", label: "Receipt" },
-  { id: "gradient", label: "Gradient" },
-  { id: "retro", label: "Retro" },
+  { id: "standard",  label: "Standard",  preview: "bg-white border-t-4 border-blue-500" },
+  { id: "modern",    label: "Modern",    preview: "bg-slate-50 border-l-4 border-slate-800" },
+  { id: "minimal",   label: "Minimal",   preview: "bg-white border border-gray-200" },
+  { id: "classic",   label: "Classic",   preview: "bg-[#fdfbf7] border-double border-4 border-amber-900/20" },
+  { id: "elegant",   label: "Elegant",   preview: "bg-white border-b border-gray-300" },
+  { id: "bold",      label: "Bold",      preview: "bg-zinc-900 text-white" },
+  { id: "corporate", label: "Corporate", preview: "bg-white border-t-8 border-indigo-600" },
+  { id: "creative",  label: "Creative",  preview: "bg-gradient-to-br from-fuchsia-50 to-purple-50" },
+  { id: "startup",   label: "Startup",   preview: "bg-white rounded-xl shadow-sm border border-emerald-100" },
+  { id: "receipt",   label: "Receipt",   preview: "bg-yellow-50 font-mono border-dashed border-2 border-yellow-200" },
+  { id: "gradient",  label: "Gradient",  preview: "bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 shadow-inner ring-1 ring-white/20" },
+  { id: "retro",     label: "Retro",     preview: "bg-amber-50 border border-amber-800/30 font-serif" },
 ] as const;

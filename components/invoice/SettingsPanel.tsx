@@ -221,28 +221,46 @@ export default function SettingsPanel({ invoice, onChange }: SettingsPanelProps)
           {/* ── Template ── */}
           <SectionCollapsible label="Template Design" defaultOpen>
             <div className="p-4 pt-2">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {TEMPLATES.map((t) => (
                   <button
                     key={t.id}
                     onClick={() => onChange({ template: t.id })}
                     className={cn(
-                      "relative flex items-center justify-center gap-2 h-14 rounded-lg border text-sm font-medium transition-all px-3",
+                      "relative flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all group",
                       invoice.template === t.id
-                        ? "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
-                        : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                        ? "border-primary bg-primary/5 shadow-md shadow-primary/5 scale-[1.02]"
+                        : "border-transparent hover:border-muted-foreground/20 hover:bg-muted/5",
                     )}
                   >
+                    <div className={cn("w-full h-14 rounded-lg flex flex-col items-center justify-start overflow-hidden relative shadow-sm transition-transform group-hover:scale-[1.02]", t.preview)}>
+                      {/* Skeleton layout */}
+                      <div className="absolute inset-0 p-1 opacity-20 flex flex-col gap-1 pointer-events-none">
+                        {t.id === "gradient" ? (
+                          <div className="w-full h-1/2 bg-white/40 rounded-sm mb-1" />
+                        ) : t.id === "bold" ? (
+                          <div className="w-full h-full bg-white/10 rounded-sm" />
+                        ) : t.id === "standard" || t.id === "corporate" ? (
+                          <div className="w-full h-1.5 bg-current opacity-20 rounded-full mb-1" />
+                        ) : null}
+                        <div className="flex justify-between w-full">
+                          <div className="w-1/3 h-1 bg-current opacity-30 rounded-full" />
+                          <div className="w-1/4 h-1 bg-current opacity-30 rounded-full" />
+                        </div>
+                        <div className="w-full h-[1px] bg-current opacity-10 my-1" />
+                        <div className="space-y-0.5 mt-auto">
+                          <div className="w-full h-1 bg-current opacity-20 rounded-sm" />
+                          <div className="w-full h-1 bg-current opacity-10 rounded-sm" />
+                          <div className="w-2/3 h-1 bg-current opacity-10 rounded-sm" />
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold tracking-tight text-muted-foreground/80 group-hover:text-foreground transition-colors">{t.label}</span>
                     {invoice.template === t.id && (
-                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-sm">
-                        <Check className="w-3 h-3 text-primary-foreground" />
+                      <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5 shadow-sm">
+                        <Check className="w-2 h-2" />
                       </div>
                     )}
-                    <div
-                      className="w-5 h-5 rounded shadow-sm opacity-90 border border-primary/20"
-                      style={{ background: invoice.template === t.id ? invoice.themeColor : "#e5e7eb" }}
-                    />
-                    <span>{t.label}</span>
                   </button>
                 ))}
               </div>

@@ -28,7 +28,7 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative w-full min-h-screen flex flex-col items-center overflow-hidden">
+    <section ref={sectionRef} className="relative w-full min-h-screen flex flex-col items-center justify-center sm:justify-start overflow-hidden">
       {/* ── Background Layer ── */}
       <div className="absolute inset-0 z-0 bg-white">
         <div
@@ -52,7 +52,7 @@ export default function HeroSection() {
       </div>
 
       {/* ── Main Content ── */}
-      <div className="relative z-10 w-full max-w-4xl mx-auto px-6 pt-40 flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-4xl mx-auto px-6 sm:pt-40 flex flex-col items-center">
         {/* Heading Group */}
         <div className="text-center">
           <h1 className="animate-fade-in-up flex flex-col items-center tracking-tighter">
@@ -70,10 +70,10 @@ export default function HeroSection() {
           </p>
 
           {/* CTAs */}
-          <div className="animate-fade-in-up flex items-center justify-center gap-4 mt-8" style={{ animationDelay: "0.2s" }}>
-            <Link href="/editor">
+          <div className="animate-fade-in-up flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mt-8 w-full sm:w-auto" style={{ animationDelay: "0.2s" }}>
+            <Link href="/editor" className="w-full sm:w-auto">
               <Button
-                className="min-w-[190px]"
+                className="w-full sm:w-auto sm:min-w-[190px]"
                 icon={ArrowRight02Icon}
                 iconPosition="right"
               >
@@ -82,7 +82,7 @@ export default function HeroSection() {
             </Link>
             <Button
               variant="glass-outline"
-              className="min-w-[190px]"
+              className="w-full sm:w-auto sm:min-w-[190px]"
               icon={PlayIcon}
               iconPosition="left"
             >

@@ -11,7 +11,8 @@ import ChatPanel from "./ChatPanel";
 import InvoiceCanvas from "./InvoiceCanvas";
 import dynamic from "next/dynamic";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
-import { Sparkles, Settings } from "lucide-react";
+import { Sparkles, Settings, X, Download } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-media-query";
 
 const SettingsPanel = dynamic(() => import("./SettingsPanel"), { ssr: false });
 
@@ -33,9 +34,23 @@ export default function InvoiceEditor() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [previousResponseId, setPreviousResponseId] = useState<string | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<"settings" | "ai" | null>(null);
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+
+  const isMobile = useIsMobile();
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const openMobilePanel = (panel: "settings" | "ai") => {
+    setMobilePanel(panel);
+    requestAnimationFrame(() => requestAnimationFrame(() => setMobilePanelOpen(true)));
+  };
+
+  const closeMobilePanel = () => {
+    setMobilePanelOpen(false);
+    setTimeout(() => setMobilePanel(null), 300);
+  };
 
   // Persist to localStorage on every invoice change
   useEffect(() => {
@@ -44,24 +59,30 @@ export default function InvoiceEditor() {
 
   // Auto-fit scale on mount and resize
   useEffect(() => {
-    if (isEditMode) {
+    // On desktop in edit mode, use 1:1 scale; on mobile always fit to width
+    if (isEditMode && !isMobile) {
       setScale(1);
       return;
     }
 
     const fit = () => {
-      if (!isAutoFit) return;
+      if (!isAutoFit && !isMobile) return;
       if (!containerRef.current) return;
       const { width, height } = containerRef.current.getBoundingClientRect();
-      const scaleW = (width - 80) / 816;
-      const scaleH = (height - 80) / 1056;
-      setScale(Math.min(scaleW, scaleH, 1));
+      if (isMobile) {
+        // Fit canvas to viewport width with a small margin
+        setScale(Math.min((width - 16) / 816, 1));
+      } else {
+        const scaleW = (width - 80) / 816;
+        const scaleH = (height - 80) / 1056;
+        setScale(Math.min(scaleW, scaleH, 1));
+      }
     };
     fit();
     const ro = new ResizeObserver(fit);
     if (containerRef.current) ro.observe(containerRef.current);
     return () => ro.disconnect();
-  }, [activeTab, isEditMode, isAutoFit]);
+  }, [activeTab, isEditMode, isAutoFit, isMobile]);
 
   // Keyboard shortcuts for zooming
   useEffect(() => {
@@ -268,7 +289,7 @@ export default function InvoiceEditor() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-background">
+    <div className="h-[100dvh] flex flex-col overflow-hidden bg-background">
       <EditorToolbar
         isEditMode={isEditMode}
         onToggleEditMode={() => setIsEditMode((v) => !v)}
@@ -282,8 +303,8 @@ export default function InvoiceEditor() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar Tabs Area */}
-        <div className="flex flex-col h-full w-1/3 min-w-[360px] max-w-[480px] border-r border-border bg-sidebar shrink-0 shadow-sm z-10 transition-all">
+        {/* Sidebar — desktop only */}
+        <div className="hidden md:flex flex-col h-full w-1/3 min-w-[360px] max-w-[480px] border-r border-border bg-sidebar shrink-0 shadow-sm z-10 transition-all">
           <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as "settings" | "ai")} className="flex flex-col h-full data-[orientation=horizontal]:flex-col">
             <div className="px-3 pt-3 pb-2 border-b border-border bg-background/50 backdrop-blur-sm shrink-0">
               <TabsList className="w-full grid grid-cols-2 bg-muted/50 p-1 rounded-lg">
@@ -299,10 +320,7 @@ export default function InvoiceEditor() {
             </div>
 
             <TabsPanel value="settings" className="flex-1 overflow-hidden">
-              <SettingsPanel
-                invoice={invoice}
-                onChange={updateInvoice}
-              />
+              <SettingsPanel invoice={invoice} onChange={updateInvoice} />
             </TabsPanel>
 
             <TabsPanel value="ai" className="flex-1 overflow-hidden">
@@ -319,7 +337,7 @@ export default function InvoiceEditor() {
         {/* ── Canvas Area ── */}
         <div
           ref={containerRef}
-          className="flex-1 overflow-auto bg-[#f0f0f0] flex items-start justify-center py-8"
+          className="flex-1 overflow-auto bg-[#f0f0f0] flex items-start justify-center py-2 md:py-8"
           style={{ backgroundImage: "radial-gradient(#d1d5db 1px, transparent 1px)", backgroundSize: "20px 20px" }}
           onWheel={(e) => {
             if (isEditMode) return;
@@ -330,7 +348,6 @@ export default function InvoiceEditor() {
             }
           }}
         >
-
           {/* Shadow + canvas wrapper */}
           <div
             className="transition-all duration-300 ease-in-out"
@@ -338,12 +355,10 @@ export default function InvoiceEditor() {
               transform: `scale(${scale})`,
               transformOrigin: "top center",
               width: 816,
-              // The parent container handles the layout. 
-              // We need to ensure the container knows the scaled height to avoid extra scroll space.
               height: 1056,
               display: "flex",
               flexDirection: "column",
-              marginBottom: -1056 * (1 - scale), // Pull up the next element (scrollbar space)
+              marginBottom: -1056 * (1 - scale),
               marginRight: -816 * ((1 - scale) / 2),
               marginLeft: -816 * ((1 - scale) / 2),
               boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 20px 60px -10px rgba(0,0,0,0.2)",
@@ -358,9 +373,92 @@ export default function InvoiceEditor() {
             />
           </div>
         </div>
-
-
       </div>
+
+      {/* ── Mobile Bottom Navigation Bar ── */}
+      <div
+        className="md:hidden flex items-stretch border-t border-border bg-background shrink-0"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <button
+          onClick={() => openMobilePanel("settings")}
+          className="flex flex-1 flex-col items-center justify-center gap-1 py-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors active:bg-muted"
+        >
+          <Settings className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Settings</span>
+        </button>
+
+        <button
+          onClick={() => openMobilePanel("ai")}
+          className="flex flex-1 flex-col items-center justify-center gap-1 py-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors active:bg-muted"
+        >
+          <Sparkles className="w-5 h-5" />
+          <span className="text-[10px] font-medium">AI Chat</span>
+        </button>
+
+        <button
+          onClick={handleDownloadPDF}
+          disabled={isExporting}
+          className="flex flex-1 flex-col items-center justify-center gap-1 py-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors active:bg-muted disabled:opacity-50"
+        >
+          <Download className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Export</span>
+        </button>
+      </div>
+
+      {/* ── Mobile Slide-Up Panel ── */}
+      {mobilePanel && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 transition-opacity duration-300"
+            style={{ opacity: mobilePanelOpen ? 1 : 0 }}
+            onClick={closeMobilePanel}
+          />
+
+          {/* Panel */}
+          <div
+            className="relative bg-background rounded-t-2xl flex flex-col transition-transform duration-300 ease-out"
+            style={{
+              height: "88dvh",
+              transform: mobilePanelOpen ? "translateY(0)" : "translateY(100%)",
+            }}
+          >
+            {/* Drag handle + header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+              <div className="flex items-center gap-2">
+                {mobilePanel === "settings"
+                  ? <Settings className="w-4 h-4 text-muted-foreground" />
+                  : <Sparkles className="w-4 h-4 text-muted-foreground" />
+                }
+                <span className="text-sm font-semibold">
+                  {mobilePanel === "settings" ? "Settings" : "AI Assistant"}
+                </span>
+              </div>
+              <button
+                onClick={closeMobilePanel}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Panel content */}
+            <div className="flex-1 overflow-hidden">
+              {mobilePanel === "settings" ? (
+                <SettingsPanel invoice={invoice} onChange={updateInvoice} />
+              ) : (
+                <ChatPanel
+                  messages={messages}
+                  onSendMessage={handleSendMessage}
+                  onNewChat={handleNewChat}
+                  isGenerating={isGenerating}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

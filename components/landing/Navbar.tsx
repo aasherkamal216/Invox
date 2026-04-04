@@ -16,7 +16,7 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-20 pointer-events-none">
+    <nav className="fixed top-4 sm:top-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4 sm:px-20 pointer-events-none">
       <div
         className={`
           flex items-center justify-between py-2.5 px-6 rounded-full border transition-all duration-500 pointer-events-auto
@@ -33,7 +33,7 @@ export default function Navbar() {
         </Link>
 
         {/* Action using our custom red glass button, but scaled down for navbar */}
-        <Link href="/editor" className="btn-glass !py-2 !px-6 !text-xs scale-90 origin-right">
+        <Link href="/editor" className="btn-glass !py-2 !px-4 sm:!px-6 !text-xs">
           Get Started
         </Link>
       </div>

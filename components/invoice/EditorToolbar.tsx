@@ -77,8 +77,8 @@ export default function EditorToolbar({
 
       {/* Right: Zoom Toolbar + Reset + Download */}
       <div className="flex items-center gap-3">
-        {/* Zoom Controls (coss Toolbar) */}
-        <Toolbar className="border-0 bg-muted/30 p-0.5 rounded-lg shadow-none gap-0">
+        {/* Zoom Controls — desktop only */}
+        <Toolbar className="hidden md:flex border-0 bg-muted/30 p-0.5 rounded-lg shadow-none gap-0">
           <ToolbarGroup className="gap-0">
             <ToolbarButton
               render={
@@ -146,6 +146,7 @@ export default function EditorToolbar({
         </Toolbar>
 
         <div className="flex items-center gap-2">
+          {/* Reset — desktop: text+icon, mobile: icon only */}
           <AlertDialog>
             <AlertDialogTrigger
               render={(props) => (
@@ -156,7 +157,7 @@ export default function EditorToolbar({
                   className="gap-1.5 h-8 px-3 text-xs font-medium transition-all group"
                 >
                   <RotateCcw className="w-3 h-3 group-hover:-rotate-90 transition-transform duration-300" />
-                  Reset
+                  <span className="hidden md:inline">Reset</span>
                 </Button>
               )}
             />
@@ -195,7 +196,7 @@ export default function EditorToolbar({
             disabled={isExporting}
           >
             {!isExporting && <Download className="w-3.5 h-3.5" />}
-            Download
+            <span className="hidden sm:inline">Download</span>
           </Button>
         </div>
       </div>

@@ -43,7 +43,7 @@ const updateInvoiceFields = tool({
     title: z.string().nullable().describe("Invoice title, or null to leave unchanged"),
     invoiceNumber: z.string().nullable().describe("Invoice number, or null to leave unchanged"),
     date: z.string().nullable().describe("Issue date in yyyy-MM-dd format, or null to leave unchanged"),
-    dueDate: z.string().nullable().describe("Due date in yyyy-MM-dd format, or null to leave unchanged"),
+    dueDate: z.string().nullable().describe("Due date in yyyy-MM-dd format, empty string \"\" to remove the due date, or null to leave unchanged"),
     fromDetails: z.string().nullable().describe("Multiline sender address / company details, or null to leave unchanged"),
     toDetails: z.string().nullable().describe("Multiline recipient / client details, or null to leave unchanged"),
     currency: z.string().nullable().describe("Currency symbol e.g. '$', '€', '£', or null to leave unchanged"),
@@ -58,7 +58,7 @@ const updateInvoiceFields = tool({
     if (input.title !== null) fields.title = input.title;
     if (input.invoiceNumber !== null) fields.invoiceNumber = input.invoiceNumber;
     if (input.date !== null) fields.date = input.date;
-    if (input.dueDate !== null) fields.dueDate = input.dueDate;
+    if (input.dueDate !== null) fields.dueDate = input.dueDate || null;
     if (input.fromDetails !== null) fields.fromDetails = input.fromDetails;
     if (input.toDetails !== null) fields.toDetails = input.toDetails;
     if (input.currency !== null) fields.currency = input.currency;

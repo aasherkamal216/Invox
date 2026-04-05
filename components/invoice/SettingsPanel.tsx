@@ -289,11 +289,24 @@ export default function SettingsPanel({ invoice, onChange }: SettingsPanelProps)
                     className="h-8 text-sm"
                   />
                 </FieldRow>
-                <FieldRow label="Due Date">
-                  <DatePicker 
-                    date={invoice.dueDate} 
-                    onChange={(d) => onChange({ dueDate: d })} 
+                <FieldRow
+                  label="Due Date"
+                  valueRight={
+                    invoice.dueDate ? (
+                      <button
+                        onClick={() => onChange({ dueDate: undefined })}
+                        className="text-xs text-muted-foreground hover:text-destructive underline"
+                      >
+                        Remove
+                      </button>
+                    ) : undefined
+                  }
+                >
+                  <DatePicker
+                    date={invoice.dueDate}
+                    onChange={(d) => onChange({ dueDate: d })}
                     className="h-8 text-sm"
+                    placeholder="No due date"
                   />
                 </FieldRow>
               </div>

@@ -48,7 +48,7 @@ export type InvoiceData = {
   title: string;
   invoiceNumber: string;
   date: string;
-  dueDate: string;
+  dueDate?: string | null;
   fromDetails: string;
   toDetails: string;
   items: InvoiceItem[];

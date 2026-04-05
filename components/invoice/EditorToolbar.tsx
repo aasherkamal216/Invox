@@ -154,7 +154,7 @@ export default function EditorToolbar({
                   {...props}
                   variant="destructive"
                   size="sm"
-                  className="gap-1.5 h-8 px-3 text-xs font-medium transition-all group"
+                  className="gap-1.5 h-8 w-8 px-0 md:w-auto md:px-3 text-xs font-medium transition-all group"
                 >
                   <RotateCcw className="w-3 h-3 group-hover:-rotate-90 transition-transform duration-300" />
                   <span className="hidden md:inline">Reset</span>

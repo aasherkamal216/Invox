@@ -18,7 +18,7 @@ function calcTotals(invoice: InvoiceData) {
 }
 
 function fmt(currency: string, amount: number) {
-  return `${currency}${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${currency.trim()} ${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 const InvoiceCanvas = forwardRef<HTMLDivElement, InvoiceCanvasProps>(
@@ -198,11 +198,11 @@ function TemplateContent(props: TemplateProps) {
               <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "center", fontSize: 13 }}>
                 {ef(String(item.quantity), (v) => updateItem(item.id, "quantity", parseFloat(v) || 0), { type: "number", style: { textAlign: "center" } })}
               </td>
-              <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "right", fontSize: 13 }}>
-                <span>{invoice.currency}</span>
+              <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "right", fontSize: 13, whiteSpace: "nowrap" }}>
+                <span>{invoice.currency.trim()} </span>
                 {ef(String(item.rate), (v) => updateItem(item.id, "rate", parseFloat(v) || 0), { type: "number", style: { textAlign: "right" } })}
               </td>
-              <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "right", fontSize: 13, fontWeight: 500 }}>
+              <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "right", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" }}>
                 {fmt(invoice.currency, item.amount)}
               </td>
               {isEditMode && (
@@ -263,27 +263,27 @@ function TemplateContent(props: TemplateProps) {
       <div style={{ minWidth: 260 }}>
         <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "#6b7280", borderBottom: "1px solid #f3f4f6" }}>
           <span style={{ whiteSpace: "nowrap" }}>{ef(invoice.labels.subtotal, (v) => updateLabel("subtotal", v))}</span>
-          <span style={{ fontWeight: 500 }}>{fmt(invoice.currency, subtotal)}</span>
+          <span style={{ fontWeight: 500, whiteSpace: "nowrap" }}>{fmt(invoice.currency, subtotal)}</span>
         </div>
         {invoice.taxRate > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "#6b7280", borderBottom: "1px solid #f3f4f6" }}>
             <span style={{ whiteSpace: "nowrap" }}>
               {ef(invoice.labels.tax, (v) => updateLabel("tax", v))} ({invoice.taxRate}%)
             </span>
-            <span style={{ fontWeight: 500 }}>{fmt(invoice.currency, taxAmount)}</span>
+            <span style={{ fontWeight: 500, whiteSpace: "nowrap" }}>{fmt(invoice.currency, taxAmount)}</span>
           </div>
         )}
         {invoice.discount > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: "#16a34a", borderBottom: "1px solid #f3f4f6" }}>
             <span style={{ whiteSpace: "nowrap" }}>{ef(invoice.labels.discount, (v) => updateLabel("discount", v))}</span>
-            <span style={{ fontWeight: 500 }}>-{fmt(invoice.currency, invoice.discount)}</span>
+            <span style={{ fontWeight: 500, whiteSpace: "nowrap" }}>-{fmt(invoice.currency, invoice.discount)}</span>
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px", marginTop: 4, background: theme, borderRadius: 8, color: "#fff" }}>
           <span style={{ fontWeight: 700, fontSize: 14 }}>
             {ef(invoice.labels.total, (v) => updateLabel("total", v), { style: { color: "#fff" } })}
           </span>
-          <span style={{ fontWeight: 800, fontSize: 16 }}>{fmt(invoice.currency, total)}</span>
+          <span style={{ fontWeight: 800, fontSize: 16, whiteSpace: "nowrap" }}>{fmt(invoice.currency, total)}</span>
         </div>
       </div>
     </div>
@@ -339,10 +339,12 @@ function TemplateContent(props: TemplateProps) {
               {ef(invoice.labels.date, (v) => updateLabel("date", v), { style: { fontWeight: 600, color: "#374151" } })}{": "}
               {ef(invoice.date, (v) => onChange({ date: v }), { type: "date" })}
             </div>
+            {invoice.dueDate && (
             <div style={{ fontSize: 13, color: "#6b7280" }}>
               {ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v), { style: { fontWeight: 600, color: "#374151" } })}{": "}
               {ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date" })}
             </div>
+            )}
           </div>
         </div>
         <div style={{ marginBottom: 28, padding: "16px 20px", background: "#f9fafb", borderRadius: 8, borderLeft: `3px solid ${theme}` }}>
@@ -395,10 +397,12 @@ function TemplateContent(props: TemplateProps) {
           </div>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 24, marginBottom: 32, padding: 20, background: "#f9fafb", borderRadius: 12 }}>
+          {invoice.dueDate && (
           <div style={{ flex: "1 1 120px" }}>
             <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>{ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v))}</div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date" })}</div>
           </div>
+          )}
         </div>
         {itemsTable}
         {totalsSection}
@@ -436,10 +440,12 @@ function TemplateContent(props: TemplateProps) {
               <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", color: "#9ca3af", marginBottom: 4 }}>{ef(invoice.labels.date, (v) => updateLabel("date", v))}</div>
               {ef(invoice.date, (v) => onChange({ date: v }), { type: "date", style: { color: "#374151" } })}
             </div>
+            {invoice.dueDate && (
             <div>
               <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", color: "#9ca3af", marginBottom: 4 }}>{ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v))}</div>
               {ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date", style: { color: "#374151" } })}
             </div>
+            )}
           </div>
         </div>
         {itemsTable}
@@ -482,10 +488,12 @@ function TemplateContent(props: TemplateProps) {
             {ef(invoice.labels.date, (v) => updateLabel("date", v), { style: { fontWeight: 700 } })}
             {ef(invoice.date, (v) => onChange({ date: v }), { type: "date" })}
           </div>
+          {invoice.dueDate && (
           <div style={{ display: "flex", gap: 8 }}>
             {ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v), { style: { fontWeight: 700 } })}
             {ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date" })}
           </div>
+          )}
         </div>
         {itemsTable}
         {totalsSection}
@@ -512,6 +520,12 @@ function TemplateContent(props: TemplateProps) {
                 <span style={{ textTransform: "uppercase", fontSize: 10, letterSpacing: "0.08em" }}>{ef(invoice.labels.date, (v) => updateLabel("date", v), { placeholder: "Date" })}</span>
                 <span style={{ color: "#111827" }}>{ef(invoice.date, (v) => onChange({ date: v }), { type: "date" })}</span>
               </div>
+              {invoice.dueDate && (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={{ textTransform: "uppercase", fontSize: 10, letterSpacing: "0.08em" }}>{ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v), { placeholder: "Due" })}</span>
+                <span style={{ color: "#111827" }}>{ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date" })}</span>
+              </div>
+              )}
             </div>
           </div>
           {invoice.logoUrl && <img src={invoice.logoUrl} alt="Logo" style={{ height: invoice.logoSize ?? 64, objectFit: "contain" }} />}
@@ -565,10 +579,12 @@ function TemplateContent(props: TemplateProps) {
               <span style={{ fontWeight: 700, color: "#6b7280", fontSize: 13 }}>{ef(invoice.labels.date, (v) => updateLabel("date", v))}</span>
               {ef(invoice.date, (v) => onChange({ date: v }), { type: "date", style: { fontSize: 13 } })}
             </div>
+            {invoice.dueDate && (
             <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #e5e7eb", paddingBottom: 8 }}>
               <span style={{ fontWeight: 700, color: "#6b7280", fontSize: 13 }}>{ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v))}</span>
               {ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date", style: { fontSize: 13 } })}
             </div>
+            )}
           </div>
         </div>
         <div style={{ padding: `0 ${pad}px ${pad}px` }}>
@@ -602,10 +618,12 @@ function TemplateContent(props: TemplateProps) {
               {ef(invoice.labels.date, (v) => updateLabel("date", v), { style: { color: "#6b7280" }, placeholder: "Date:" })}
               {ef(invoice.date, (v) => onChange({ date: v }), { type: "date", style: { fontWeight: 500 } })}
             </div>
+            {invoice.dueDate && (
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               {ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v), { style: { color: "#6b7280" }, placeholder: "Due Date:" })}
               {ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date", style: { fontWeight: 500 } })}
             </div>
+            )}
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 32, background: "#f9fafb", padding: 24, borderRadius: 8 }}>
@@ -654,10 +672,12 @@ function TemplateContent(props: TemplateProps) {
                 <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: "#9ca3af", marginBottom: 4 }}>{ef(invoice.labels.date, (v) => updateLabel("date", v), { placeholder: "Date" })}</div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{ef(invoice.date, (v) => onChange({ date: v }), { type: "date" })}</div>
               </div>
+              {invoice.dueDate && (
               <div>
                 <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: "#9ca3af", marginBottom: 4 }}>{ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v), { placeholder: "Due" })}</div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date" })}</div>
               </div>
+              )}
             </div>
           </div>
         </div>
@@ -701,10 +721,12 @@ function TemplateContent(props: TemplateProps) {
               <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9ca3af", marginBottom: 8 }}>{ef(invoice.labels.date, (v) => updateLabel("date", v), { placeholder: "Issued" })}</div>
               {ef(invoice.date, (v) => onChange({ date: v }), { type: "date", style: { fontSize: 14, fontWeight: 500, color: "#111827" } })}
             </div>
+            {invoice.dueDate && (
             <div>
               <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9ca3af", marginBottom: 8 }}>{ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v), { placeholder: "Due" })}</div>
               {ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date", style: { fontSize: 14, fontWeight: 500, color: "#111827" } })}
             </div>
+            )}
           </div>
         </div>
         {itemsTable}
@@ -733,6 +755,12 @@ function TemplateContent(props: TemplateProps) {
               {ef(invoice.labels.date, (v) => updateLabel("date", v), { placeholder: "Date:" })}
               {ef(invoice.date, (v) => onChange({ date: v }), { type: "date" })}
             </div>
+            {invoice.dueDate && (
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 4, fontSize: 13 }}>
+              {ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v), { placeholder: "Due:" })}
+              {ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date" })}
+            </div>
+            )}
           </div>
           <div style={{ marginBottom: 24, borderBottom: "2px dashed #d1d5db", paddingBottom: 24 }}>
             <div style={{ fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>{ef(invoice.labels.to, (v) => updateLabel("to", v), { placeholder: "Bill To:" })}</div>
@@ -780,10 +808,12 @@ function TemplateContent(props: TemplateProps) {
                 {ef(invoice.labels.date, (v) => updateLabel("date", v), { style: { color: "rgba(255,255,255,0.6)" } })}
                 {ef(invoice.date, (v) => onChange({ date: v }), { type: "date", style: { color: "#fff", fontWeight: 500 } })}
               </div>
+              {invoice.dueDate && (
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", fontSize: 13 }}>
                 {ef(invoice.labels.dueDate, (v) => updateLabel("dueDate", v), { style: { color: "rgba(255,255,255,0.6)" } })}
                 {ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date", style: { color: "#fff", fontWeight: 500 } })}
               </div>
+              )}
             </div>
           </div>
         </div>
@@ -835,10 +865,12 @@ function TemplateContent(props: TemplateProps) {
               <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.12em", color: retroColor, marginBottom: 2 }}>Issued</div>
               {ef(invoice.date, (v) => onChange({ date: v }), { type: "date", style: { color: "#374151", fontStyle: "italic" } })}
             </div>
+            {invoice.dueDate && (
             <div>
               <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.12em", color: retroColor, marginBottom: 2 }}>Due</div>
               {ef(invoice.dueDate, (v) => onChange({ dueDate: v }), { type: "date", style: { color: "#374151", fontStyle: "italic" } })}
             </div>
+            )}
           </div>
           {/* Wax-seal badge */}
           <div style={{ display: "flex", alignItems: "center" }}>

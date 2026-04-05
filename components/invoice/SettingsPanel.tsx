@@ -303,7 +303,7 @@ export default function SettingsPanel({ invoice, onChange }: SettingsPanelProps)
                   }
                 >
                   <DatePicker
-                    date={invoice.dueDate}
+                    date={invoice.dueDate ?? undefined}
                     onChange={(d) => onChange({ dueDate: d })}
                     className="h-8 text-sm"
                     placeholder="No due date"

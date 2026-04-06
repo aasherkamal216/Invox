@@ -27,6 +27,7 @@ AI-powered invoice generator. Users can create and edit invoices through:
 - **React 19** with TypeScript
 - **Tailwind CSS v4** (PostCSS plugin, not Vite plugin — no `tailwind.config.*` file)
 - **Coss UI** (`https://coss.com/ui`) — component library built on Base UI + Tailwind CSS. Components are copy-paste-and-own (not a package dependency); they live in `components/ui/`. Docs for LLMs: `https://coss.com/ui/llms.txt`
+  - **Always use existing `components/ui/` components** — never build raw inline equivalents (custom toggle buttons, checkboxes, switches, dialogs, etc.). Check `components/ui/` first before writing any interactive primitive from scratch.
 - **OpenAI Agents SDK** (`@openai/agents`) for the AI backend — use Server Components / Route Handlers for all agent calls, never the client
 
 ## App Router Patterns (Next.js 16)

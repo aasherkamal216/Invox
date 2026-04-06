@@ -82,7 +82,9 @@ const getCurrentInvoice = tool({
   parameters: z.object({}),
   execute(_input, runCtx) {
     const ctx = getCtx(runCtx);
-    return JSON.stringify(ctx.invoiceData);
+    // Strip logoUrl (base64 data URL can be hundreds of KB — the model only needs to control logoSize)
+    const { logoUrl: _logoUrl, ...safeData } = ctx.invoiceData;
+    return JSON.stringify(safeData);
   },
 });
 
@@ -155,7 +157,7 @@ const VALID_TEMPLATES: Template[] = [
 const updateStyling = tool({
   name: "update_styling",
   description:
-    "Change visual / layout properties of the invoice: template, themeColor (hex), fontFamily, padding (px), rowSpacing (px), logoSize (px). Pass null for any field you do not want to change.",
+    "Change visual / layout properties of the invoice: template, themeColor (hex), fontFamily, padding (px), rowSpacing (px), logoSize (px), showWatermark (bool). Pass null for any field you do not want to change.",
   parameters: z.object({
     template: z.string().nullable().describe(`One of: ${VALID_TEMPLATES.join(", ")}. Or null to leave unchanged.`),
     themeColor: z.string().nullable().describe("Hex color e.g. '#3B82F6', or null to leave unchanged"),
@@ -163,6 +165,7 @@ const updateStyling = tool({
     padding: z.number().nullable().describe("Invoice padding in px, or null to leave unchanged"),
     rowSpacing: z.number().nullable().describe("Row spacing in px, or null to leave unchanged"),
     logoSize: z.number().nullable().describe("Logo size in px, or null to leave unchanged"),
+    showWatermark: z.boolean().nullable().describe("true to show 'Powered by Invox' watermark at the bottom, false to hide it, or null to leave unchanged"),
   }),
   execute(input, runCtx) {
     const ctx = getCtx(runCtx);
@@ -183,6 +186,7 @@ const updateStyling = tool({
     if (input.padding !== null) fields.padding = input.padding;
     if (input.rowSpacing !== null) fields.rowSpacing = input.rowSpacing;
     if (input.logoSize !== null) fields.logoSize = input.logoSize;
+    if (input.showWatermark !== null) fields.showWatermark = input.showWatermark;
 
     Object.assign(ctx.patch, fields);
     return JSON.stringify({ success: true, updatedFields: Object.keys(fields) });

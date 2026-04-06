@@ -14,6 +14,7 @@ import { FONT_OPTIONS, TEMPLATES, DEFAULT_LABELS, SAMPLE_INVOICE } from "@/lib/i
 import { cn } from "@/lib/utils";
 import SignaturePad from "./SignaturePad";
 import { ChevronDown, ImagePlus, Plus, Trash2, Undo2, Eraser, Check, CalendarIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { 
   Select, 
   SelectTrigger, 
@@ -502,6 +503,20 @@ export default function SettingsPanel({ invoice, onChange }: SettingsPanelProps)
                   <Eraser className="w-3.5 h-3.5 mr-2" /> Remove Signature
                 </Button>
               )}
+            </div>
+          </SectionCollapsible>
+
+          {/* ── Watermark ── */}
+          <SectionCollapsible label="Watermark">
+            <div className="flex items-center justify-between p-4 pt-2">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-foreground/80">Show watermark</span>
+                <span className="text-xs text-muted-foreground">Display "Powered by Invox" at the bottom</span>
+              </div>
+              <Switch
+                checked={invoice.showWatermark !== false}
+                onCheckedChange={(checked) => onChange({ showWatermark: checked })}
+              />
             </div>
           </SectionCollapsible>
 

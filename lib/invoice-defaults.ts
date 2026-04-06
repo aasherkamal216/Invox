@@ -47,6 +47,7 @@ export const SAMPLE_INVOICE: InvoiceData = {
   template: "standard",
   fontFamily: "Inter, sans-serif",
   signature: undefined,
+  showWatermark: true,
   labels: { ...DEFAULT_LABELS },
 };
 

@@ -310,6 +310,29 @@ function TemplateContent(props: TemplateProps) {
     </div>
   );
 
+  // ── Watermark (shared) ────────────────────────────────
+
+  const watermark = invoice.showWatermark !== false && (
+    <div style={{ marginTop: 28, paddingTop: 12, borderTop: "1px solid #e5e7eb", textAlign: "center" as const }}>
+      <a
+        href="https://invox.aasherkamal.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ fontSize: 9, letterSpacing: "0.06em", color: "#c4c9d4", textDecoration: "none" }}
+      >
+        POWERED BY{" "}
+        <span style={{ fontWeight: 700, color: "#9ca3af" }}>INVOX</span>
+      </a>
+    </div>
+  );
+
+  const footer = (
+    <>
+      {signature}
+      {watermark}
+    </>
+  );
+
   // ── Template header routing ────────────────────────────
 
   const t = invoice.template;
@@ -355,7 +378,7 @@ function TemplateContent(props: TemplateProps) {
         </div>
         {itemsTable}
         {totalsSection}
-        {signature}
+        {footer}
       </div>
     );
   }
@@ -406,7 +429,7 @@ function TemplateContent(props: TemplateProps) {
         </div>
         {itemsTable}
         {totalsSection}
-        {signature}
+        {footer}
       </div>
     );
   }
@@ -450,7 +473,7 @@ function TemplateContent(props: TemplateProps) {
         </div>
         {itemsTable}
         {totalsSection}
-        {signature}
+        {footer}
       </div>
     );
   }
@@ -497,7 +520,7 @@ function TemplateContent(props: TemplateProps) {
         </div>
         {itemsTable}
         {totalsSection}
-        {signature}
+        {footer}
       </div>
     );
   }
@@ -542,7 +565,7 @@ function TemplateContent(props: TemplateProps) {
         </div>
         {itemsTable}
         {totalsSection}
-        {signature}
+        {footer}
       </div>
     );
   }
@@ -590,7 +613,7 @@ function TemplateContent(props: TemplateProps) {
         <div style={{ padding: `0 ${pad}px ${pad}px` }}>
           {itemsTable}
           {totalsSection}
-          {signature}
+          {footer}
         </div>
       </div>
     );
@@ -638,7 +661,7 @@ function TemplateContent(props: TemplateProps) {
         </div>
         {itemsTable}
         {totalsSection}
-        {signature}
+        {footer}
       </div>
     );
   }
@@ -683,7 +706,7 @@ function TemplateContent(props: TemplateProps) {
         </div>
         {itemsTable}
         {totalsSection}
-        {signature}
+        {footer}
       </div>
     );
   }
@@ -731,7 +754,7 @@ function TemplateContent(props: TemplateProps) {
         </div>
         {itemsTable}
         {totalsSection}
-        {signature}
+        {footer}
       </div>
     );
   }
@@ -769,7 +792,7 @@ function TemplateContent(props: TemplateProps) {
         </div>
         {itemsTable}
         {totalsSection}
-        {signature}
+        {footer}
       </div>
     );
   }
@@ -831,7 +854,7 @@ function TemplateContent(props: TemplateProps) {
           </div>
           {itemsTable}
           {totalsSection}
-          {signature}
+          {footer}
         </div>
       </div>
     );
@@ -905,7 +928,7 @@ function TemplateContent(props: TemplateProps) {
 
         {itemsTable}
         {totalsSection}
-        {signature}
+        {footer}
       </div>
     );
   }
@@ -925,7 +948,7 @@ function TemplateContent(props: TemplateProps) {
       </div>
       {itemsTable}
       {totalsSection}
-      {signature}
+      {footer}
     </div>
   );
 }

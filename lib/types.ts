@@ -61,6 +61,7 @@ export type InvoiceData = {
   template: Template;
   fontFamily?: string;
   signature?: { type: "text" | "draw"; value: string };
+  showWatermark?: boolean;
   labels: InvoiceLabels;
 };
 

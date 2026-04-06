@@ -202,6 +202,26 @@ export default function InvoiceEditor() {
 
       const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [816, actualHeight] });
       pdf.addImage(imgData, "PNG", 0, 0, 816, actualHeight);
+
+      // Add clickable link annotation over the watermark (rasterized by html-to-image)
+      if (invoice.showWatermark !== false) {
+        const watermarkEl = el.querySelector('a[href*="invox.aasherkamal.com"]') as HTMLElement | null;
+        if (watermarkEl) {
+          // Sum offsetTop up to the canvas container to get layout position (unaffected by CSS transforms)
+          let offsetY = 0;
+          let offsetX = 0;
+          let node: HTMLElement | null = watermarkEl;
+          while (node && node !== el) {
+            offsetY += node.offsetTop;
+            offsetX += node.offsetLeft;
+            node = node.offsetParent as HTMLElement | null;
+          }
+          pdf.link(offsetX, offsetY, watermarkEl.offsetWidth || 816, watermarkEl.offsetHeight || 20, {
+            url: "https://invox.aasherkamal.com",
+          });
+        }
+      }
+
       pdf.save(`${invoice.invoiceNumber || "invoice"}.pdf`);
 
       toast.success("PDF downloaded!", { id: toastId });

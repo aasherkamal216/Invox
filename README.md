@@ -53,6 +53,9 @@ Add a text signature or draw one by hand using a pressure-sensitive canvas.
 ### Local-First & Private
 All invoice data lives in your browser's localStorage. No account, no server-side storage, no data leaving your machine (except AI requests for processing).
 
+### Auth & Rate Limiting (optional)
+Auth and rate limiting are **disabled by default** — not needed for local use or self-hosted instances. For public deployments, they can be enabled via environment variables to protect your OpenAI key from abuse. See [Deploying Publicly](#deploying-publicly) below.
+
 
 ---
 
@@ -82,6 +85,34 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
+## Deploying Publicly
+
+When hosting Invox for others (e.g. on Vercel), you'll want to protect your OpenAI key from unlimited use. Auth and rate limiting are opt-in — disabled by default, activated by environment variables.
+
+**Set these in your Vercel dashboard (leave unset for local/self-hosted):**
+
+```env
+# Enable auth gate on the AI endpoint
+NEXT_PUBLIC_ENABLE_AUTH=true
+
+# Clerk — https://clerk.com (free tier is sufficient)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+CLERK_SECRET_KEY=sk_live_...
+
+# Upstash Redis — https://upstash.com (for rate limiting, free tier is sufficient)
+UPSTASH_REDIS_REST_URL=https://...upstash.io
+UPSTASH_REDIS_REST_TOKEN=...
+```
+
+When `NEXT_PUBLIC_ENABLE_AUTH=true`:
+- Users must sign in via Clerk before using the AI assistant
+- AI requests are rate-limited to **20 per user per hour** via Upstash Redis
+- The invoice editor (manual editing, templates, PDF export) remains completely free and unrestricted
+
+When these variables are not set, the app runs as a clean, no-auth tool — exactly as cloned.
+
+---
+
 ## Commands
 
 ```bash
@@ -103,6 +134,8 @@ npm run lint     # ESLint
 | Components | Coss UI (Base UI + Tailwind) |
 | AI | OpenAI Agents SDK (`@openai/agents`) |
 | PDF Export | jsPDF + html-to-image |
+| Auth (optional) | Clerk (`@clerk/nextjs`) |
+| Rate Limiting (optional) | Upstash Ratelimit + Redis |
 
 The AI agent runs entirely server-side via a Next.js Route Handler. The client sends a message and the current invoice state; the server responds with a Server-Sent Events stream of text deltas and invoice patches.
 
@@ -111,7 +144,7 @@ The AI agent runs entirely server-side via a Next.js Route Handler. The client s
 ## Known Limitations
 
 - Invoices are stored locally only — no cross-device sync
-- No user authentication or multi-user support
+- No cross-user collaboration or multi-user support
 - The AI agent cannot upload logos, draw signatures, or customize label strings (these are UI-only actions)
 
 ---

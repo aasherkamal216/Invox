@@ -16,6 +16,11 @@ import { useIsMobile } from "@/hooks/use-media-query";
 
 const SettingsPanel = dynamic(() => import("./SettingsPanel"), { ssr: false });
 
+const ChatComponent =
+  process.env.NEXT_PUBLIC_ENABLE_AUTH === "true"
+    ? dynamic(() => import("./ChatPanelWithAuth"), { ssr: false })
+    : ChatPanel;
+
 const INITIAL_MESSAGES: ChatMessage[] = [];
 
 export default function InvoiceEditor() {
@@ -225,11 +230,26 @@ export default function InvoiceEditor() {
         body: JSON.stringify({ message: prompt, previousResponseId, invoiceData: invoice, model, files }),
       });
 
-      if (!res.ok || !res.body) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", text: `Error: Server returned ${res.status}. Please try again.` },
-        ]);
+      if (!res.ok) {
+        let msg = `Server error (${res.status}). Please try again.`;
+        if (res.status === 401) msg = "Please sign in to use the AI assistant.";
+        // Try to extract the detailed message from the SSE body (e.g. rate limit details)
+        if (res.body) {
+          try {
+            const text = await res.text();
+            const dataLine = text.split("\n").find((l) => l.startsWith("data: "));
+            if (dataLine) {
+              const event = JSON.parse(dataLine.slice(6));
+              if (event.type === "error" && event.message) msg = event.message;
+            }
+          } catch { /* fall through to generic message */ }
+        }
+        setMessages((prev) => [...prev, { role: "assistant", text: msg }]);
+        return;
+      }
+
+      if (!res.body) {
+        setMessages((prev) => [...prev, { role: "assistant", text: "No response from server. Please try again." }]);
         return;
       }
 
@@ -269,7 +289,7 @@ export default function InvoiceEditor() {
             } else if (event.type === "error") {
               setMessages((prev) => [
                 ...prev,
-                { role: "assistant", text: `Error: ${event.message}` },
+                { role: "assistant", text: event.message },
               ]);
               setIsGenerating(false);
             }
@@ -324,7 +344,7 @@ export default function InvoiceEditor() {
             </TabsPanel>
 
             <TabsPanel value="ai" className="flex-1 overflow-hidden">
-              <ChatPanel
+              <ChatComponent
                 messages={messages}
                 onSendMessage={handleSendMessage}
                 onNewChat={handleNewChat}
@@ -448,7 +468,7 @@ export default function InvoiceEditor() {
               {mobilePanel === "settings" ? (
                 <SettingsPanel invoice={invoice} onChange={updateInvoice} />
               ) : (
-                <ChatPanel
+                <ChatComponent
                   messages={messages}
                   onSendMessage={handleSendMessage}
                   onNewChat={handleNewChat}

@@ -320,6 +320,21 @@ function createAgent(model: string) {
 export async function POST(req: NextRequest) {
   type AttachedFile = { name: string; mimeType: string; base64: string };
 
+  // ── 1. Auth check (only when NEXT_PUBLIC_ENABLE_AUTH=true) ──────────────
+  let authUserId: string | null = null;
+  if (process.env.NEXT_PUBLIC_ENABLE_AUTH === "true") {
+    const { auth } = await import("@clerk/nextjs/server");
+    const { isAuthenticated, userId } = await auth();
+    if (!isAuthenticated) {
+      return new Response(
+        sse({ type: "error", message: "Sign in to use the AI assistant." }),
+        { status: 401, headers: { "Content-Type": "text/event-stream" } }
+      );
+    }
+    authUserId = userId;
+  }
+
+  // ── 2. Parse body ────────────────────────────────────────────────────────
   let body: {
     message: string;
     previousResponseId?: string | null;
@@ -335,6 +350,35 @@ export async function POST(req: NextRequest) {
       sse({ type: "error", message: "Invalid JSON in request body" }),
       { status: 400, headers: { "Content-Type": "text/event-stream" } }
     );
+  }
+
+  // ── 3. Rate limit (only when Upstash env vars are set) ──────────────────
+  if (process.env.UPSTASH_REDIS_REST_URL) {
+    const { Ratelimit } = await import("@upstash/ratelimit");
+    const { Redis } = await import("@upstash/redis");
+    const redis = Redis.fromEnv();
+    const ratelimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(30, "1 h"),
+      analytics: true,
+    });
+    const identifier =
+      authUserId ||
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "anonymous";
+    const { success, limit, reset } = await ratelimit.limit(identifier);
+    if (!success) {
+      const minutesLeft = Math.ceil((reset - Date.now()) / 60_000);
+      const timeLabel = minutesLeft <= 1 ? "less than a minute" : `${minutesLeft} minutes`;
+      return new Response(
+        sse({
+          type: "error",
+          message: `You've used all ${limit} AI requests for this hour. Resets in ${timeLabel}. You can still edit your invoice manually in the editor — it's always free.`,
+        }),
+        { status: 429, headers: { "Content-Type": "text/event-stream" } }
+      );
+    }
   }
 
   const { message, previousResponseId, invoiceData, model = "gpt-5.4-mini", files } = body;

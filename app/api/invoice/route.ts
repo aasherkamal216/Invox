@@ -359,7 +359,7 @@ export async function POST(req: NextRequest) {
     const redis = Redis.fromEnv();
     const ratelimit = new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(30, "1 h"),
+      limiter: Ratelimit.fixedWindow(30, "1 h"),
       analytics: true,
     });
     const identifier =

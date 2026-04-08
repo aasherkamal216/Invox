@@ -44,6 +44,9 @@ Standard, Modern, Minimal, Classic, Elegant, Bold, Corporate, Creative, Startup,
 - **Settings Panel** — Tabbed sidebar for branding, typography, financials, and layout.
 - **Inline Editing** — Click any field on the invoice to edit it directly.
 
+### Voice Dictation
+Click the mic icon in the chat input to dictate your message instead of typing. Speech is transcribed server-side using OpenAI's `gpt-4o-mini-transcribe` model and inserted directly into the input field. Recording caps at **30 seconds** automatically. Chat messages have a **1,000-character limit**.
+
 ### PDF Export
 One-click export at print-ready resolution (816×1056px). Fonts, colors, and layout are preserved exactly as they appear on screen.
 
@@ -132,7 +135,7 @@ npm run lint     # ESLint
 | Language | TypeScript 5 |
 | Styling | Tailwind CSS v4 |
 | Components | Coss UI (Base UI + Tailwind) |
-| AI | OpenAI Agents SDK (`@openai/agents`) |
+| AI | OpenAI Agents SDK (`@openai/agents`), Transcriptions API (`gpt-4o-mini-transcribe`) |
 | PDF Export | jsPDF + html-to-image |
 | Auth (optional) | Clerk (`@clerk/nextjs`) |
 | Rate Limiting (optional) | Upstash Ratelimit + Redis |

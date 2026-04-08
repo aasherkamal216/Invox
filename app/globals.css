@@ -128,6 +128,15 @@
     opacity: 0;
     }
   }
+  --animate-soundbar-1: soundbar 0.8s ease-in-out infinite alternate;
+  --animate-soundbar-2: soundbar 0.8s ease-in-out 0.12s infinite alternate;
+  --animate-soundbar-3: soundbar 0.8s ease-in-out 0.24s infinite alternate;
+  --animate-soundbar-4: soundbar 0.8s ease-in-out 0.36s infinite alternate;
+  --animate-soundbar-5: soundbar 0.8s ease-in-out 0.08s infinite alternate;
+  @keyframes soundbar {
+    from { transform: scaleY(0.2); }
+    to   { transform: scaleY(1); }
+  }
 }
 
 body {

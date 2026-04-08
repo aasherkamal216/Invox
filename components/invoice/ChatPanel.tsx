@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { List, Palette, Sparkles, ChevronDown, ArrowUp, SquarePen, Plus, FileText, X } from "lucide-react";
+import { List, Palette, Sparkles, ChevronDown, ArrowUp, SquarePen, Plus, FileText, X, Mic, Square, Loader2 } from "lucide-react";
+
+type RecordingState = "idle" | "recording" | "transcribing";
 
 type AttachedFile = {
   file: File;
@@ -57,12 +59,27 @@ export default function ChatPanel({ messages, onSendMessage, onNewChat, isGenera
   const [model, setModel] = useState("gpt-5.4-mini");
   const [modelOpen, setModelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [recordingState, setRecordingState] = useState<RecordingState>("idle");
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const MAX_RECORDING_SECONDS = 30;
 
   const isEmpty = messages.length === 0;
+
+  const clearRecordingTimers = useCallback(() => {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
+    recordingTimerRef.current = null;
+    recordingTimeoutRef.current = null;
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,6 +93,16 @@ export default function ChatPanel({ messages, onSendMessage, onNewChat, isGenera
     ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
   }, [input]);
 
+  // Cleanup recording on unmount
+  useEffect(() => {
+    return () => {
+      clearRecordingTimers();
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, [clearRecordingTimers]);
+
   // Close model dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -86,6 +113,85 @@ export default function ChatPanel({ messages, onSendMessage, onNewChat, isGenera
     if (modelOpen) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [modelOpen]);
+
+  const transcribeAudio = useCallback(async (blob: Blob) => {
+    setRecordingState("transcribing");
+    try {
+      const formData = new FormData();
+      const mimeType = blob.type || "audio/webm";
+      const ext = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : "webm";
+      formData.append("audio", blob, `recording.${ext}`);
+
+      const res = await fetch("/api/transcribe", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Transcription failed");
+      const data = await res.json() as { text?: string };
+
+      if (data.text?.trim()) {
+        setInput((prev) => {
+          const combined = prev ? `${prev} ${data.text!.trim()}` : data.text!.trim();
+          return combined.slice(0, 1000);
+        });
+        setTimeout(() => textareaRef.current?.focus(), 50);
+      }
+    } catch {
+      // silently fall through — user can retry
+    } finally {
+      setRecordingState("idle");
+      setRecordingSeconds(0);
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    clearRecordingTimers();
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
+  }, [clearRecordingTimers]);
+
+  const startRecording = useCallback(async () => {
+    if (recordingState !== "idle") return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"]
+        .find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
+
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const finalMime = recorder.mimeType || "audio/webm";
+        const blob = new Blob(audioChunksRef.current, { type: finalMime });
+        transcribeAudio(blob);
+      };
+
+      recorder.start(100);
+      setRecordingState("recording");
+      setRecordingSeconds(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((s) => s + 1);
+      }, 1000);
+
+      recordingTimeoutRef.current = setTimeout(() => {
+        stopRecording();
+      }, MAX_RECORDING_SECONDS * 1000);
+    } catch {
+      // microphone denied — silently ignore
+    }
+  }, [recordingState, transcribeAudio, stopRecording]);
+
+  const handleMicClick = useCallback(() => {
+    if (recordingState === "idle") startRecording();
+    else if (recordingState === "recording") stopRecording();
+  }, [recordingState, startRecording, stopRecording]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
@@ -120,7 +226,7 @@ export default function ChatPanel({ messages, onSendMessage, onNewChat, isGenera
 
   const handleSend = async () => {
     const text = input.trim();
-    if ((!text && attachedFiles.length === 0) || isGenerating) return;
+    if ((!text && attachedFiles.length === 0) || isGenerating || recordingState !== "idle") return;
 
     // Encode attached files as base64
     const encodedFiles: EncodedFile[] = await Promise.all(
@@ -249,9 +355,14 @@ export default function ChatPanel({ messages, onSendMessage, onNewChat, isGenera
 
       {/* Input card */}
       <div className="px-3 pb-3 pt-1 shrink-0">
-        <div className="rounded-2xl border border-border bg-background shadow-sm px-3 pt-2.5 pb-2">
+        <div
+          className={cn(
+            "rounded-2xl border bg-background shadow-sm px-3 pt-2.5 pb-2 transition-colors duration-200",
+            recordingState === "recording" ? "border-red-400/60" : "border-border"
+          )}
+        >
           {/* File chips */}
-          {attachedFiles.length > 0 && (
+          {attachedFiles.length > 0 && recordingState === "idle" && (
             <div className="flex gap-2 flex-wrap mb-2.5">
               {attachedFiles.map((f, i) => (
                 <div key={i} className="flex items-center gap-1.5 bg-muted rounded-lg px-2 py-1 text-xs max-w-[160px]">
@@ -269,13 +380,49 @@ export default function ChatPanel({ messages, onSendMessage, onNewChat, isGenera
             </div>
           )}
 
+          {/* Recording / Transcribing indicator */}
+          {recordingState === "recording" && (
+            <div className="flex items-center gap-2.5 py-0.5 mb-1">
+              {/* Animated waveform bars */}
+              <div className="flex items-center gap-[3px] h-5">
+                <div className="w-[3px] rounded-full bg-red-500 origin-bottom" style={{ height: "18px", animation: "soundbar 0.8s ease-in-out infinite alternate" }} />
+                <div className="w-[3px] rounded-full bg-red-500 origin-bottom" style={{ height: "18px", animation: "soundbar 0.8s ease-in-out 0.12s infinite alternate" }} />
+                <div className="w-[3px] rounded-full bg-red-500 origin-bottom" style={{ height: "18px", animation: "soundbar 0.8s ease-in-out 0.24s infinite alternate" }} />
+                <div className="w-[3px] rounded-full bg-red-500 origin-bottom" style={{ height: "18px", animation: "soundbar 0.8s ease-in-out 0.36s infinite alternate" }} />
+                <div className="w-[3px] rounded-full bg-red-500 origin-bottom" style={{ height: "18px", animation: "soundbar 0.8s ease-in-out 0.08s infinite alternate" }} />
+              </div>
+              <span className="text-xs text-red-500 font-medium tabular-nums">
+                {String(Math.floor(recordingSeconds / 60)).padStart(1, "0")}:{String(recordingSeconds % 60).padStart(2, "0")}
+                <span className="text-red-400/60 font-normal"> / 0:30</span>
+              </span>
+              {/* Progress bar */}
+              <div className="flex-1 h-[3px] rounded-full bg-red-100 overflow-hidden">
+                <div
+                  className="h-full bg-red-400 rounded-full transition-all duration-1000 ease-linear"
+                  style={{ width: `${(recordingSeconds / MAX_RECORDING_SECONDS) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {recordingState === "transcribing" && (
+            <div className="flex items-center gap-2 py-0.5 mb-1">
+              <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
+              <span className="text-xs text-muted-foreground">Transcribing...</span>
+            </div>
+          )}
+
           <textarea
             ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Message the AI"
+            onChange={(e) => setInput(e.target.value.slice(0, 1000))}
+            placeholder={recordingState === "recording" ? "Listening…" : "Message the AI"}
+            readOnly={recordingState !== "idle"}
             rows={1}
-            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none outline-none leading-relaxed"
+            className={cn(
+              "w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none outline-none leading-relaxed transition-opacity",
+              recordingState !== "idle" && "opacity-40 cursor-default"
+            )}
             style={{ minHeight: "20px", maxHeight: "120px" }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -289,10 +436,10 @@ export default function ChatPanel({ messages, onSendMessage, onNewChat, isGenera
           <div className="flex items-center gap-1.5 mt-2">
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={attachedFiles.length >= 2}
+              disabled={attachedFiles.length >= 2 || recordingState !== "idle"}
               className={cn(
                 "p-1 rounded-md transition-colors",
-                attachedFiles.length >= 2
+                attachedFiles.length >= 2 || recordingState !== "idle"
                   ? "text-muted-foreground/30 cursor-not-allowed"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
@@ -305,7 +452,13 @@ export default function ChatPanel({ messages, onSendMessage, onNewChat, isGenera
             <div className="relative" ref={modelMenuRef}>
               <button
                 onClick={() => setModelOpen((v) => !v)}
-                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-foreground hover:bg-muted transition-colors"
+                disabled={recordingState !== "idle"}
+                className={cn(
+                  "flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors",
+                  recordingState !== "idle"
+                    ? "text-muted-foreground/40 cursor-not-allowed"
+                    : "text-foreground hover:bg-muted"
+                )}
               >
                 {model}
                 <ChevronDown className="w-3 h-3" />
@@ -328,14 +481,33 @@ export default function ChatPanel({ messages, onSendMessage, onNewChat, isGenera
               )}
             </div>
 
-            {/* Send button */}
-            <div className="ml-auto">
+            {/* Mic + Send buttons */}
+            <div className="ml-auto flex items-center gap-1.5">
+              <button
+                onClick={handleMicClick}
+                disabled={recordingState === "transcribing"}
+                title={recordingState === "recording" ? "Stop recording" : "Dictate message (max 30s)"}
+                className={cn(
+                  "p-1 rounded-md transition-colors",
+                  recordingState === "recording"
+                    ? "text-red-500 hover:bg-red-50"
+                    : recordingState === "transcribing"
+                    ? "text-muted-foreground/40 cursor-not-allowed"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                {recordingState === "recording" ? (
+                  <Square className="w-4 h-4 fill-current" />
+                ) : (
+                  <Mic className="w-4 h-4" />
+                )}
+              </button>
               <button
                 onClick={handleSend}
-                disabled={!input.trim() || isGenerating}
+                disabled={!input.trim() || isGenerating || recordingState !== "idle"}
                 className={cn(
                   "w-7 h-7 rounded-full flex items-center justify-center transition-colors",
-                  input.trim() && !isGenerating
+                  input.trim() && !isGenerating && recordingState === "idle"
                     ? "bg-foreground text-background hover:opacity-80"
                     : "bg-muted text-muted-foreground cursor-not-allowed"
                 )}

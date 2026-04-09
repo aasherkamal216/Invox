@@ -94,14 +94,14 @@ const getCurrentInvoice = tool({
 const itemSchema = z.object({
   id: z.string().nullable().describe("Existing item id for merge mode, or null to create a new item"),
   description: z.string(),
-  quantity: z.number(),
-  rate: z.number().describe("Unit price — amount is calculated automatically as quantity * rate"),
+  quantity: z.number().describe("Quantity — use 1 when the invoice is in amount-only mode (hideQtyRate=true)"),
+  rate: z.number().describe("Unit price — amount is calculated as quantity * rate. When hideQtyRate=true, set quantity=1 and rate=the desired amount"),
 });
 
 const updateItems = tool({
   name: "update_items",
   description:
-    "Update the invoice line items. Use mode='replace' to set the entire items array, or mode='merge' to add/update individual items (matched by id). Do NOT provide an amount field — it is always quantity * rate. To delete items in merge mode, pass their ids in removeIds (or empty array if none to remove).",
+    "Update the invoice line items. Use mode='replace' to set the entire items array, or mode='merge' to add/update individual items (matched by id). Do NOT provide an amount field — it is always quantity * rate. To delete items in merge mode, pass their ids in removeIds (or empty array if none to remove). When creating flat-fee or amount-only invoices (hideQtyRate=true), set quantity=1 and rate=the desired amount for each item.",
   parameters: z.object({
     mode: z.enum(["replace", "merge"]),
     items: z.array(itemSchema),
@@ -157,7 +157,7 @@ const VALID_TEMPLATES: Template[] = [
 const updateStyling = tool({
   name: "update_styling",
   description:
-    "Change visual / layout properties of the invoice: template, themeColor (hex), fontFamily, padding (px), rowSpacing (px), logoSize (px), showWatermark (bool). Pass null for any field you do not want to change.",
+    "Change visual / layout properties of the invoice: template, themeColor (hex), fontFamily, padding (px), rowSpacing (px), logoSize (px), showWatermark (bool), hideQtyRate (bool — hides Qty and Rate columns, showing only Description and Amount). Pass null for any field you do not want to change.",
   parameters: z.object({
     template: z.string().nullable().describe(`One of: ${VALID_TEMPLATES.join(", ")}. Or null to leave unchanged.`),
     themeColor: z.string().nullable().describe("Hex color e.g. '#3B82F6', or null to leave unchanged"),
@@ -166,6 +166,7 @@ const updateStyling = tool({
     rowSpacing: z.number().nullable().describe("Row spacing in px, or null to leave unchanged"),
     logoSize: z.number().nullable().describe("Logo size in px, or null to leave unchanged"),
     showWatermark: z.boolean().nullable().describe("true to show 'Powered by Invox' watermark at the bottom, false to hide it, or null to leave unchanged"),
+    hideQtyRate: z.boolean().nullable().describe("true to hide Qty and Rate columns (show only Description + Amount — ideal for flat-fee or IP transfer invoices), false to show them, or null to leave unchanged"),
   }),
   execute(input, runCtx) {
     const ctx = getCtx(runCtx);
@@ -187,6 +188,7 @@ const updateStyling = tool({
     if (input.rowSpacing !== null) fields.rowSpacing = input.rowSpacing;
     if (input.logoSize !== null) fields.logoSize = input.logoSize;
     if (input.showWatermark !== null) fields.showWatermark = input.showWatermark;
+    if (input.hideQtyRate !== null) fields.hideQtyRate = input.hideQtyRate;
 
     Object.assign(ctx.patch, fields);
     return JSON.stringify({ success: true, updatedFields: Object.keys(fields) });
@@ -213,10 +215,11 @@ const generateInvoice = tool({
     discount: z.number().nullable().describe("Discount amount, or null for 0"),
     notes: z.string().nullable().describe("Notes text, or null for empty"),
     terms: z.string().nullable().describe("Terms text, or null for empty"),
-    items: z.array(itemSchema).describe("Line items — always provide at least one based on the description"),
+    items: z.array(itemSchema).describe("Line items — always provide at least one based on the description. When hideQtyRate=true, set quantity=1 and rate=the desired amount for each item."),
     template: z.string().nullable().describe(`One of: ${VALID_TEMPLATES.join(", ")}. Or null to auto-pick.`),
     themeColor: z.string().nullable().describe("Hex color, or null to auto-pick"),
     fontFamily: z.string().nullable().describe("Font family, or null to leave as default"),
+    hideQtyRate: z.boolean().nullable().describe("true to hide Qty/Rate columns (amount-only mode for flat-fee invoices), false to show them, or null to auto-decide based on context"),
   }),
   execute(input, runCtx) {
     const ctx = getCtx(runCtx);
@@ -255,6 +258,7 @@ const generateInvoice = tool({
       template,
       themeColor: input.themeColor ?? "#3B82F6",
       ...(input.fontFamily ? { fontFamily: input.fontFamily } : {}),
+      ...(input.hideQtyRate !== null ? { hideQtyRate: input.hideQtyRate ?? false } : {}),
     };
 
     Object.assign(ctx.patch, patch);
@@ -292,11 +296,13 @@ const SYSTEM_PROMPT = `You are an expert invoice assistant integrated into an AI
 ## Tool Usage Guide
 - **update_invoice_fields** — Use for any top-level scalar field changes (title, dates, parties, currency, tax, discount, notes, terms). Pass null for fields you are not changing.
 - **update_items** — Use to add, edit, or remove line items. Use mode="replace" for full replacement, mode="merge" for targeted changes.
-- **update_styling** — Use to change the template, color theme, font, padding, or spacing. Pass null for fields you are not changing.
+- **update_styling** — Use to change the template, color theme, font, padding, spacing, or toggle hideQtyRate. Pass null for fields you are not changing.
 - **generate_invoice** — Use when the user wants to create a complete invoice from scratch. Infer all fields intelligently from their description.
 
 ## Behavior Guidelines
 - Be proactive: if a user says "make it look professional for a law firm", pick an appropriate template (e.g. "classic" or "corporate") and a neutral color automatically.
+- When an invoice has flat-fee line items (no meaningful quantity or unit rate — e.g. IP transfers, lump-sum services, software handovers), proactively call update_styling with hideQtyRate=true AND set quantity=1 with rate=the desired amount for each item via update_items.
+- If the user asks to "hide qty/rate", "amount only", or "remove qty and rate columns", call update_styling with hideQtyRate=true.
 - If the user says "add an item for X at $Y", infer quantity=1, rate=Y, description=X.
 - If the user asks to change the currency to euros, set currency="€".
 - For "net 30" terms, set dueDate to 30 days from the invoice date and terms="Net 30".

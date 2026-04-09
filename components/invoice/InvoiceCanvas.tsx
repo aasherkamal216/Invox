@@ -39,6 +39,10 @@ const InvoiceCanvas = forwardRef<HTMLDivElement, InvoiceCanvasProps>(
           const updated = { ...item, [field]: value };
           if (field === "quantity" || field === "rate") {
             updated.amount = Number(updated.quantity) * Number(updated.rate);
+          } else if (field === "amount") {
+            // In amount-only mode, keep qty=1 and rate in sync with amount
+            updated.quantity = 1;
+            updated.rate = Number(value);
           }
           return updated;
         }),
@@ -169,6 +173,8 @@ function TemplateContent(props: TemplateProps) {
 
   // ── Items table (shared across all templates) ──────────
 
+  const hideQtyRate = invoice.hideQtyRate === true;
+
   const itemsTable = (
     <>
       <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}>
@@ -177,12 +183,16 @@ function TemplateContent(props: TemplateProps) {
             <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", borderRadius: "6px 0 0 6px" }}>
               {ef(invoice.labels.description, (v) => updateLabel("description", v), { style: { color: "#fff" } })}
             </th>
-            <th style={{ textAlign: "center", padding: "10px 12px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", width: 60 }}>
-              {ef(invoice.labels.quantity, (v) => updateLabel("quantity", v), { style: { color: "#fff" } })}
-            </th>
-            <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", width: 90 }}>
-              {ef(invoice.labels.rate, (v) => updateLabel("rate", v), { style: { color: "#fff" } })}
-            </th>
+            {!hideQtyRate && (
+              <th style={{ textAlign: "center", padding: "10px 12px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", width: 60 }}>
+                {ef(invoice.labels.quantity, (v) => updateLabel("quantity", v), { style: { color: "#fff" } })}
+              </th>
+            )}
+            {!hideQtyRate && (
+              <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", width: 90 }}>
+                {ef(invoice.labels.rate, (v) => updateLabel("rate", v), { style: { color: "#fff" } })}
+              </th>
+            )}
             <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", width: 100, borderRadius: isEditMode ? "0" : "0 6px 6px 0" }}>
               {ef(invoice.labels.amount, (v) => updateLabel("amount", v), { style: { color: "#fff" } })}
             </th>
@@ -195,15 +205,27 @@ function TemplateContent(props: TemplateProps) {
               <td style={{ padding: `${rowSpacing / 2}px 12px`, fontSize: 13 }}>
                 {ef(item.description, (v) => updateItem(item.id, "description", v), { type: "multiline", placeholder: "Item description" })}
               </td>
-              <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "center", fontSize: 13 }}>
-                {ef(String(item.quantity), (v) => updateItem(item.id, "quantity", parseFloat(v) || 0), { type: "number", style: { textAlign: "center" } })}
-              </td>
-              <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "right", fontSize: 13, whiteSpace: "nowrap" }}>
-                <span>{invoice.currency.trim()} </span>
-                {ef(String(item.rate), (v) => updateItem(item.id, "rate", parseFloat(v) || 0), { type: "number", style: { textAlign: "right" } })}
-              </td>
+              {!hideQtyRate && (
+                <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "center", fontSize: 13 }}>
+                  {ef(String(item.quantity), (v) => updateItem(item.id, "quantity", parseFloat(v) || 0), { type: "number", style: { textAlign: "center" } })}
+                </td>
+              )}
+              {!hideQtyRate && (
+                <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "right", fontSize: 13, whiteSpace: "nowrap" }}>
+                  <span>{invoice.currency.trim()} </span>
+                  {ef(String(item.rate), (v) => updateItem(item.id, "rate", parseFloat(v) || 0), { type: "number", style: { textAlign: "right" } })}
+                </td>
+              )}
               <td style={{ padding: `${rowSpacing / 2}px 12px`, textAlign: "right", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" }}>
-                {fmt(invoice.currency, item.amount)}
+                {hideQtyRate
+                  ? (
+                    <>
+                      <span>{invoice.currency.trim()} </span>
+                      {ef(String(item.amount), (v) => updateItem(item.id, "amount", parseFloat(v) || 0), { type: "number", style: { textAlign: "right" } })}
+                    </>
+                  )
+                  : fmt(invoice.currency, item.amount)
+                }
               </td>
               {isEditMode && (
                 <td style={{ padding: "4px", textAlign: "center" }}>

@@ -100,6 +100,9 @@ export default function SettingsPanel({ invoice, onChange }: SettingsPanelProps)
         const updated = { ...item, [field]: value };
         if (field === "quantity" || field === "rate") {
           updated.amount = Number(updated.quantity) * Number(updated.rate);
+        } else if (field === "amount") {
+          updated.quantity = 1;
+          updated.rate = Number(value);
         }
         return updated;
       }),
@@ -339,6 +342,16 @@ export default function SettingsPanel({ invoice, onChange }: SettingsPanelProps)
           {/* ── Line Items ── */}
           <SectionCollapsible label="Line Items">
             <div className="flex flex-col gap-3 p-4 pt-2">
+              <div className="flex items-center justify-between py-1">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-medium text-foreground/80">Amount only</span>
+                  <span className="text-xs text-muted-foreground">Hide Qty &amp; Rate columns</span>
+                </div>
+                <Switch
+                  checked={invoice.hideQtyRate === true}
+                  onCheckedChange={(checked) => onChange({ hideQtyRate: checked })}
+                />
+              </div>
               {invoice.items.map((item, idx) => (
                 <div key={item.id} className="border border-border/80 rounded-xl p-3 flex flex-col gap-3 bg-muted/20 shadow-sm group relative transition-all hover:border-border">
                   <div className="flex items-center justify-between px-1">
@@ -359,37 +372,53 @@ export default function SettingsPanel({ invoice, onChange }: SettingsPanelProps)
                     placeholder="Service or Product Description"
                   />
 
-                  <div className="grid grid-cols-12 gap-2">
-                    <div className="col-span-3">
-                      <Label className="text-xs text-muted-foreground mb-1 block px-1">Qty</Label>
-                      <Input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(item.id, "quantity", parseFloat(e.target.value) || 0)}
-                        className="h-8 text-sm px-2 text-center"
-                        min={0}
-                      />
-                    </div>
-                    <div className="col-span-4">
-                      <Label className="text-xs text-muted-foreground mb-1 block px-1">Rate</Label>
+                  {invoice.hideQtyRate ? (
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block px-1">Amount</Label>
                       <div className="relative">
                         <span className="absolute left-2.5 top-2.5 text-muted-foreground/60 text-sm">{invoice.currency}</span>
                         <Input
                           type="number"
-                          value={item.rate}
-                          onChange={(e) => handleItemChange(item.id, "rate", parseFloat(e.target.value) || 0)}
+                          value={item.amount}
+                          onChange={(e) => handleItemChange(item.id, "amount", parseFloat(e.target.value) || 0)}
                           className="h-8 text-sm pl-7 pr-2 font-mono"
                           min={0}
                         />
                       </div>
                     </div>
-                    <div className="col-span-5">
-                      <Label className="text-xs text-muted-foreground mb-1 block px-1 truncate">Amount</Label>
-                      <div className="h-8 flex items-center justify-end text-sm font-semibold px-3 border border-border/60 rounded-md bg-background shadow-inner font-mono text-foreground/90">
-                        {invoice.currency}{item.amount.toFixed(2)}
+                  ) : (
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-3">
+                        <Label className="text-xs text-muted-foreground mb-1 block px-1">Qty</Label>
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => handleItemChange(item.id, "quantity", parseFloat(e.target.value) || 0)}
+                          className="h-8 text-sm px-2 text-center"
+                          min={0}
+                        />
+                      </div>
+                      <div className="col-span-4">
+                        <Label className="text-xs text-muted-foreground mb-1 block px-1">Rate</Label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-2.5 text-muted-foreground/60 text-sm">{invoice.currency}</span>
+                          <Input
+                            type="number"
+                            value={item.rate}
+                            onChange={(e) => handleItemChange(item.id, "rate", parseFloat(e.target.value) || 0)}
+                            className="h-8 text-sm pl-7 pr-2 font-mono"
+                            min={0}
+                          />
+                        </div>
+                      </div>
+                      <div className="col-span-5">
+                        <Label className="text-xs text-muted-foreground mb-1 block px-1 truncate">Amount</Label>
+                        <div className="h-8 flex items-center justify-end text-sm font-semibold px-3 border border-border/60 rounded-md bg-background shadow-inner font-mono text-foreground/90">
+                          {invoice.currency}{item.amount.toFixed(2)}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
 

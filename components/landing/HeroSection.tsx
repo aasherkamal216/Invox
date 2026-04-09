@@ -11,6 +11,13 @@ export default function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const router = useRouter();
 
+  const scrollToDemo = () => {
+    const demoSection = document.getElementById('demo');
+    if (demoSection) {
+      demoSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
@@ -64,7 +71,7 @@ export default function HeroSection() {
             </span>
           </h1>
 
-          <p className="animate-fade-in-up mt-4 max-w-sm mx-auto text-base text-black/60 leading-relaxed font-medium" style={{ animationDelay: "0.1s" }}>
+          <p className="animate-fade-in-up mt-4 max-w-sm mx-auto text-base text-foreground/80 leading-relaxed font-medium" style={{ animationDelay: "0.1s" }}>
             The smart invoicing tool for freelancers and small businesses.
             Fast, professional, and effortless.
           </p>
@@ -85,6 +92,7 @@ export default function HeroSection() {
               className="w-full sm:w-auto sm:min-w-[190px]"
               icon={PlayIcon}
               iconPosition="left"
+              onClick={scrollToDemo}
             >
               Watch Demo
             </Button>

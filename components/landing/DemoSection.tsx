@@ -13,30 +13,38 @@ export default function DemoSection() {
   useEffect(() => {
     const video = videoRef.current;
     const section = sectionRef.current;
-    
+
     if (!video || !section) return;
 
-    const observer = new IntersectionObserver(
+    // Observer 1: start buffering while section is still ~800px below viewport
+    const preloadObserver = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            video.play().catch((error) => {
-              console.log("Autoplay prevented:", error);
-            });
-          } else {
-            video.pause();
-          }
-        });
+        if (entries[0].isIntersecting) {
+          video.load();
+          preloadObserver.disconnect();
+        }
       },
-      {
-        threshold: 0.5, // Play when 50% of the section is visible
-      }
+      { rootMargin: "800px 0px" }
     );
 
-    observer.observe(section);
+    // Observer 2: play/pause based on actual visibility
+    const playObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    preloadObserver.observe(section);
+    playObserver.observe(section);
 
     return () => {
-      observer.disconnect();
+      preloadObserver.disconnect();
+      playObserver.disconnect();
     };
   }, []);
 
@@ -99,7 +107,8 @@ export default function DemoSection() {
               loop
               muted
               playsInline
-              className="w-full h-auto block"
+              preload="none"
+              className="w-full h-auto block aspect-video"
               onError={() => setVideoError(true)}
             />
           )}

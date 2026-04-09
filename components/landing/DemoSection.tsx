@@ -95,7 +95,7 @@ export default function DemoSection() {
           ) : (
             <video
               ref={videoRef}
-              src="/invox-demo-video.mp4"
+              src="/videos/invox-demo-video.mp4"
               loop
               muted
               playsInline

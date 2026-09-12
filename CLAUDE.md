@@ -134,7 +134,7 @@ The backend is a Next.js Route Handler (`POST /api/invoice`) that runs an **Open
 - Accepts streaming requests with `{ message, previousResponseId?, invoiceData }`
 - Uses the **Responses API** (via `previousResponseId`) to store multi-turn conversation history server-side
 - Returns **Server-Sent Events (SSE)** with text deltas + invoice patches
-- Model: **gpt-5.4-mini** (configurable, currently set for cost/speed balance)
+- Model: **gpt-5.6-luna** (configurable, currently set for cost/speed balance)
 
 ### Request/Response Flow
 

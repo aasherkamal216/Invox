@@ -235,7 +235,7 @@ export default function InvoiceEditor() {
 
   const handleSendMessage = async (
     prompt: string,
-    model = "gpt-5.4-mini",
+    model = "gpt-5.6-luna",
     files?: { name: string; mimeType: string; base64: string }[],
     attachments?: { name: string; mimeType: string; preview?: string }[]
   ) => {

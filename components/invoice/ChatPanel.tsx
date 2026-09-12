@@ -18,8 +18,8 @@ type AttachedFile = {
 };
 
 const MODELS = [
-  { id: "gpt-5.4-mini", label: "gpt-5.4-mini" },
-  { id: "gpt-5.4", label: "gpt-5.4" },
+  { id: "gpt-5.6-luna", label: "gpt-5.6-luna" },
+  { id: "gpt-5.5-terra", label: "gpt-5.5-terra" },
 ];
 
 const SUGGESTED_PROMPTS = [
@@ -56,7 +56,7 @@ interface ChatPanelProps {
 
 export default function ChatPanel({ messages, onSendMessage, onNewChat, isGenerating }: ChatPanelProps) {
   const [input, setInput] = useState("");
-  const [model, setModel] = useState("gpt-5.4-mini");
+  const [model, setModel] = useState("gpt-5.6-luna");
   const [modelOpen, setModelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");

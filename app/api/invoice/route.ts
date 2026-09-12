@@ -391,7 +391,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { message, previousResponseId, invoiceData, model = "gpt-5.4-mini", files } = body;
+  const { message, previousResponseId, invoiceData, model = "gpt-5.6-luna", files } = body;
   const invoiceAgent = createAgent(model);
 
   // Build multimodal content array when files are attached
